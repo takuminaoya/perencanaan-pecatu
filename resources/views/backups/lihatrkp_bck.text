@@ -1,0 +1,105 @@
+        <!-- ===== BIDANG 1 (diulang berurutan ke bawah untuk setiap bidang) ===== -->
+        <div class="bidang-section">
+            <div class="bidang-heading-row">
+                <div class="bidang-heading-left">
+                    <span class="bidang-index">01</span>
+                    <span class="bidang-title">Bidang 1 &mdash; Daftar Kegiatan<span class="bidang-desc">Penyelenggaraan
+                            Pemerintahan Desa</span></span>
+                </div>
+                <button class="btn btn-gold"><span class="btn-icon">＋</span> Tambah Kegiatan</button>
+            </div>
+            <div class="panel table-panel">
+                <div class="table-panel-head">
+                    <p class="table-hint">Gulir ke samping untuk melihat kolom lainnya &rarr;</p>
+                </div>
+                <div class="table-scroll">
+                    <table class="rkk-table">
+                        <thead>
+                            <tr>
+                                <th rowspan="2" style="width:56px;">KD</th>
+                                <th colspan="2" class="grp-end">Bidang/Sub Bidang/Jenis Kegiatan</th>
+                                <th rowspan="2" style="width:150px;">Lokasi</th>
+                                <th rowspan="2" style="width:70px;">Volume</th>
+                                <th rowspan="2" style="width:80px;">Satuan</th>
+                                <th rowspan="2" style="width:170px;" class="grp-end">Biaya dan<br>Sumber Dana</th>
+                                <th colspan="4" class="grp-end">Sasaran</th>
+                                <th colspan="3" class="grp-end">Waktu Pelaksanaan</th>
+                                <th rowspan="2" style="width:150px;">Pelaksana<br>Kegiatan Anggaran</th>
+                                <th rowspan="2" style="width:150px;">Tim yang<br>Melaksanakan</th>
+                            </tr>
+                            <tr>
+                                <th style="width:170px;">Bidang/Sub Bidang</th>
+                                <th style="width:210px;" class="grp-end">Jenis Kegiatan</th>
+                                <th style="width:70px;">Jumlah</th>
+                                <th style="width:72px;">Laki laki</th>
+                                <th style="width:78px;">Perempuan</th>
+                                <th style="width:64px;" class="grp-end">A-RTM</th>
+                                <th style="width:80px;">Durasi</th>
+                                <th style="width:88px;">Mulai</th>
+                                <th style="width:88px;">Selesai</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="cell-kd">1.1.01</td>
+                                <td>Penyelenggaraan Pemerintahan</td>
+                                <td>Penyediaan Penghasilan Tetap dan Tunjangan Kepala Desa &amp; Perangkat</td>
+                                <td>Kantor Desa Pecatu</td>
+                                <td class="cell-center">12</td>
+                                <td class="cell-center"><span class="badge-satuan">Bulan</span></td>
+                                <td class="cell-num">Rp 480.000.000 (Dana Desa)</td>
+                                <td class="cell-center">9</td>
+                                <td class="cell-center">6</td>
+                                <td class="cell-center">3</td>
+                                <td class="cell-center">0</td>
+                                <td class="cell-center">12 Bulan</td>
+                                <td class="cell-center">Jan 2026</td>
+                                <td class="cell-center">Des 2026</td>
+                                <td>Kaur Keuangan</td>
+                                <td>Sekretariat Desa</td>
+                            </tr>
+                            <tr>
+                                <td class="cell-kd">1.1.02</td>
+                                <td>Penyelenggaraan Pemerintahan</td>
+                                <td>Penyediaan Operasional Pemerintah Desa</td>
+                                <td>Kantor Desa Pecatu</td>
+                                <td class="cell-center">1</td>
+                                <td class="cell-center"><span class="badge-satuan">Paket</span></td>
+                                <td class="cell-num">Rp 65.000.000 (Dana Desa)</td>
+                                <td class="cell-center">9</td>
+                                <td class="cell-center">6</td>
+                                <td class="cell-center">3</td>
+                                <td class="cell-center">0</td>
+                                <td class="cell-center">12 Bulan</td>
+                                <td class="cell-center">Jan 2026</td>
+                                <td class="cell-center">Des 2026</td>
+                                <td>Kaur Umum</td>
+                                <td>Sekretariat Desa</td>
+                            </tr>
+                            <tr>
+                                <td class="cell-kd">1.2.03</td>
+                                <td>Sub Bidang Pertanahan</td>
+                                <td>Pendataan dan Pemutakhiran Profil Desa</td>
+                                <td>Banjar Kangin &amp; Kauh</td>
+                                <td class="cell-center">1</td>
+                                <td class="cell-center"><span class="badge-satuan">Dokumen</span></td>
+                                <td class="cell-num">Rp 18.500.000 (Dana Desa)</td>
+                                <td class="cell-center">6</td>
+                                <td class="cell-center">4</td>
+                                <td class="cell-center">2</td>
+                                <td class="cell-center">1</td>
+                                <td class="cell-center">3 Bulan</td>
+                                <td class="cell-center">Feb 2026</td>
+                                <td class="cell-center">Apr 2026</td>
+                                <td>Kasi Pemerintahan</td>
+                                <td>Tim Pokja I</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="total-row">
+                <span class="total-label">Jumlah Anggaran &mdash; Bidang 1</span>
+                <span class="total-value">Rp 563.500.000</span>
+            </div>
+        </div>

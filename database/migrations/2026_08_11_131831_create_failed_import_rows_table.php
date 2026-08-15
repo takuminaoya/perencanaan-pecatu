@@ -11,14 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('ep_parameter_bidangs', function (Blueprint $table) {
+        Schema::create('failed_import_rows', function (Blueprint $table): void {
             $table->id();
-            $table->string('kode');
-            $table->string('parent_kode')->nullable();
-            $table->string('nama');
-            $table->string('uraian')->nullable();
-            $table->string('satuan')->nullable();
-            $table->string('tipe')->default('main');
+            $table->json('data');
+            $table->foreignId('import_id')->constrained()->cascadeOnDelete();
+            $table->text('validation_error')->nullable();
             $table->timestamps();
         });
     }
@@ -28,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('ep_parameter_bidangs');
+        Schema::dropIfExists('failed_import_rows');
     }
 };

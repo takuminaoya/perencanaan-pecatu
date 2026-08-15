@@ -36,6 +36,7 @@ class ControlPanelProvider extends PanelProvider
             ->databaseNotifications()
             ->favicon(asset('storage/public_assets/icon.png'))
             ->darkMode(false)
+            ->databaseTransactions()
             ->colors([
                 'primary' => Color::Amber,
             ])

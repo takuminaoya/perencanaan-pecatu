@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('ep_parameter_bidangs', function (Blueprint $table) {
+        Schema::create('ep_parameter_kas', function (Blueprint $table) {
             $table->id();
             $table->string('kode');
             $table->string('parent_kode')->nullable();
@@ -28,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('ep_parameter_bidangs');
+        Schema::dropIfExists('ep_parameter_kas');
     }
 };

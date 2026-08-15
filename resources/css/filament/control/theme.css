@@ -118,6 +118,10 @@ body {
     }
   }
 
+.fi-sidebar-group-label {
+    color: white;
+}
+
   .fi-in-text {
     text-transform: capitalize;
   }

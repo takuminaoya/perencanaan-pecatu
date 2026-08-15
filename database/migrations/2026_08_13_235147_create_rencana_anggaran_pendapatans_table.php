@@ -11,14 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('ep_parameter_bidangs', function (Blueprint $table) {
+        Schema::create('rencana_anggaran_pendapatans', function (Blueprint $table) {
             $table->id();
-            $table->string('kode');
-            $table->string('parent_kode')->nullable();
-            $table->string('nama');
-            $table->string('uraian')->nullable();
-            $table->string('satuan')->nullable();
-            $table->string('tipe')->default('main');
+            $table->uuid();
+
+            $table->string('judul')->default('rencana anggaran pendapatan');
+            $table->integer('tahun')->default(2026);
+            $table->string('jenis')->nullable();
+
+            $table->softDeletes();
             $table->timestamps();
         });
     }
@@ -28,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('ep_parameter_bidangs');
+        Schema::dropIfExists('rencana_anggaran_pendapatans');
     }
 };
