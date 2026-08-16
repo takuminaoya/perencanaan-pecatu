@@ -39,7 +39,8 @@ body {
 }
 
 .fi-btn {
-    border-radius: 5px;
+    /* border-radius: 5px; */
+    border-radius: 0px;;
 }
 
 .fi-sc-tabs {

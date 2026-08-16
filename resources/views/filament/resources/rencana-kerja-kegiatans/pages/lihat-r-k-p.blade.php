@@ -55,7 +55,7 @@
                     <div class="bidang-heading-left">
                         {{ $this->deleteBidang()(['id' => $bidang->id]) }}
                         <span class="bidang-index">{{ $nomor }}</span>
-                        <span class="bidang-title">{{ $bidang->bidang->kode }} &mdash; Daftar Kegiatan<span class="bidang-desc capitalize">{{ $bidang->nama_bidang }}</span></span>
+                        <span class="bidang-title">{{ $bidang->bidang->kode }} &mdash; Daftar Kegiatan <span class="bidang-desc capitalize">{{ $bidang->nama_bidang }}</span></span>
                     </div>
                     {{-- <button class="btn btn-gold"><span class="btn-icon">＋</span> Tambah Kegiatan</button> --}}
                     {{ $this->tambahKegiatan($bidang->id)(['id' => $bidang->id]) }}

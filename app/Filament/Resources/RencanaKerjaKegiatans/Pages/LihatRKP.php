@@ -138,6 +138,7 @@ class LihatRKP extends Page
                             ->numeric(),
                         Select::make('satuan')
                             ->options([
+                                'OB' => 'Org/Bln',
                                 'bulan' => 'Bulan',
                                 'paket' => 'Paket',
                                 'dokumen' => 'Dokumen',
@@ -150,8 +151,10 @@ class LihatRKP extends Page
                             ->stripCharacters(',')
                             ->default('Desa Pecatu'),
                         Select::make('sumber_kode')
+                            ->required()
                             ->options([
-                                'PBH' => 'PBH'
+                                'PBH' => 'PBH',
+                                'ADD' => 'ADD',
                             ]),
                         Section::make('Sasaran')
                             ->description('Sasaran target berupa jumlah masyarakat per jenis kelamin, untuk jumlah akan ditotalkan berdasarkan yang diinput dibawah.')
