@@ -16,8 +16,6 @@ return new class extends Migration
             $table->id();
             $table->uuid();
 
-            $table->foreignIdFor(RencanaKerjaKegiatan::class, 'rkk_id')->constrained()->cascadeOnDelete();
-
             $table->string('judul')->default('rencana anggaran biaya');
             $table->integer('tahun')->default(2026);
             $table->string('status')->default('draft');

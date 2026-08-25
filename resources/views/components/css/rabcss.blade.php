@@ -266,7 +266,7 @@
     }
 
     .rab-table th.col-kode, .rab-table td.col-kode { width: 70px; }
-    .rab-table th.col-num, .rab-table td.col-num { text-align: right; width: 130px; }
+    .rab-table th.col-num, .rab-table td.col-num { text-align: right; width: 200px; }
     .rab-table thead th.col-num, .rab-table thead th.col-kode { text-align: left; }
     .rab-table thead .subrow th.col-num { text-align: right; }
 

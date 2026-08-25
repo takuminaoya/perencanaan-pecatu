@@ -4,10 +4,14 @@ use App\Enums\CapaianEnum;
 use App\Enums\PrioritasTugas;
 use App\Enums\Status;
 use App\Enums\TipeVerif;
+use App\Models\APBDDetailMain;
+use App\Models\ParameterBidang;
+use App\Models\RencanaAnggaranBiayaBidang;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 function notif($title = 'Notifikasi Sistem', $message = 'Terjadi Kesalahan Pada Sistem.', $icon = Heroicon::XCircle){
     return Notification::make('notif')
@@ -139,4 +143,31 @@ function dateDiffCarbon(string $date1, string $date2, string $unit = 'day'): str
     $label .= $value > 1 ? 's' : '';
 
     return "{$value} {$label}";
+}
+
+function getAPBDMain($id) {
+    return APBDDetailMain::find($id);
+}
+
+function getDaftarKodeSatuan() {
+    $res = [];
+
+    $datas = DB::table('ep_parameter_kegiatans')
+            ->select('satuan_output')
+            ->groupBy('satuan_output')
+            ->get();
+
+    foreach($datas as $d){
+        $res[$d->satuan_output] = $d->satuan_output;
+    }
+
+    return $res;
+}
+
+function getBidang($id) {
+    return ParameterBidang::find($id);
+}
+
+function getRabBidang($rab_id, $main_id) {
+    return RencanaAnggaranBiayaBidang::where('rab_id', $rab_id)->where('main_bidang_id', $main_id)->get();
 }

@@ -38,7 +38,8 @@
                 @endphp
                 @foreach ($record->rabBidangs as $rabb)
                     @php
-                        $jumlah_total = $rabb->uraians->sum('jumlah_kas');
+                        // $jumlah_total = $rabb->uraians->sum('jumlah_kas');
+                        $jumlah_total = $rabb->apbdrsu->menjadi;
                     @endphp
                     <!-- ===== BIDANG BLOCK (berulang per bidang) ===== -->
                     <section class="bidang-block" id="bidangList_{{ $rabb->id }}">
@@ -121,10 +122,10 @@
 
                                                 @foreach ($rabb->uraians as $u)
                                                     <tr class="row-item-head data-row">
-                                                        <td class="col-kode">{{ $u->rabb->rkkbd->kegiatan->kode }}</td>
+                                                        <td class="col-kode">{{ $u->kegiatan->kode }}</td>
                                                         <td class="col-uraian">
                                                             <div class="item-uraian-row">
-                                                                <span>{{ $u->judul }}</span>
+                                                                <span>{{ $u->kegiatan->uraian_output }}</span>
                                                                 <span class="row-actions">
                                                                     <button wire:click="mountAction('editUraian', { id: {{ $u->id }}})" class="icon-btn icon-edit" type="button"
                                                                         title="Edit uraian">
@@ -154,6 +155,15 @@
                                                         <td class="col-num"></td>
                                                         <td class="col-num">{{ number_format($u->jumlah_kas) }}</td>
                                                     </tr>
+                                                    <tr class="row-item-head data-row">
+                                                        <td class="col-kode">{{ $u->kode_kas }}</td>
+                                                        <td class="col-uraian">
+                                                            <span>{{ $u->nama_kas }}</span>
+                                                        </td>
+                                                        <td class="col-num"></td>
+                                                        <td class="col-num"></td>
+                                                        <td class="col-num">{{ number_format($u->jumlah_kas) }}</td>
+                                                    </tr>
 
                                                     @foreach ($u->rabud as $ud)
                                                         @php
@@ -164,7 +174,7 @@
                                                             <td class="col-uraian">
                                                                 <div class="item-uraian-row">
                                                                     <span>{{ $ud->judul }} <span
-                                                                            class="satuan-tag">ADD</span></span>
+                                                                            class="satuan-tag uppercase">{{ $ud->kode_satuan }}</span></span>
                                                                     <span class="row-actions">
                                                                         <button wire:click="mountAction('editDetail', { id: {{ $ud->id }} })" class="icon-btn icon-edit" type="button"
                                                                             title="Edit uraian">
@@ -205,6 +215,7 @@
                                                                 <span class="plus">+</span> Tambah Detail Uraian
                                                             </button> --}}
                                                             {{ $this->tambahDetail()(['rabu_id' => $u->id, 'rabb_id' => $rabb->id]) }}
+                                                            {{ $this->tambahDetailMassal()(['rabu_id' => $u->id, 'rabb_id' => $rabb->id]) }}
                                                         </td>
                                                     </tr>
                                                 @endforeach

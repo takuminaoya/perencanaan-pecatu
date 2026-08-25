@@ -3,7 +3,9 @@
 namespace App\Filament\Resources\RencanaAnggaranBiayas\Pages;
 
 use App\Filament\Resources\RencanaAnggaranBiayas\RencanaAnggaranBiayaResource;
+use App\Models\APBDRincianSubUtama;
 use App\Models\ParameterKas;
+use App\Models\ParameterKegiatan;
 use App\Models\RencanaAnggaranBiayaBidang;
 use App\Models\RencanaAnggaranBiayaUraian;
 use App\Models\RencanaAnggaranBiayaUraianDetail;
@@ -11,6 +13,7 @@ use App\Models\RencanaKerjaKegiatanBidangDetail;
 use Exception;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -40,93 +43,7 @@ class LihatRAB extends Page
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('head_tambahBidang')
-                ->label('Tambah Bidang')
-                ->extraAttributes([
-                    'class' => 'btn-add'
-                ])
-                ->icon(Heroicon::Plus)
-                ->closeModalByClickingAway(false)
-                ->schema([
-                    Grid::make(3)
-                        ->schema([
-                            Select::make('rkkbd_id')
-                                ->label('Nama Kegiatan')
-                                ->allowHtml()
-                                ->required()
-                                ->searchable()
-                                ->columnSpanFull()
-                                ->live(onBlur:true)
-                                ->options(
-                                    function () : array {
-                                        $res = [];
-                                        $rkk = $this->record->rkk;
-
-                                        $kegiatans = $rkk->kegiatans;
-
-                                        foreach ($kegiatans as $keg) {
-                                            $res[$keg->id] = '<span class="font-bold">'.$keg->nama_sub.'</span><div class="text-sm">'. $keg->kegiatan->kode .' : '.$keg->nama_kegiatan.'</div>'; 
-                                        }
-
-                                        return $res;
-                                    }
-                                )
-                                ->afterStateUpdated(
-                                    function ($set, $state) {
-                                        $kegiatan = RencanaKerjaKegiatanBidangDetail::find($state);
-
-                                        $sub = $kegiatan->kegiatan->getParent();
-
-                                        $set('bidang', $kegiatan->bidang->bidang->kode . ' ' .$kegiatan->bidang->nama_bidang);
-                                        $set('sub', $sub->kode .' '. $sub->nama);
-                                        $set('kegiatan', $kegiatan->kegiatan->kode .' ' . $kegiatan->kegiatan->nama);
-                                        $set('waktu', $kegiatan->durasi);
-                                        $set('indikator_waktu', $kegiatan->satuan_durasi);
-                                        $set('durasi', $kegiatan->durasi . ' ' . $kegiatan->satuan_durasi);
-                                    }
-                                ),
-                            TextInput::make('bidang')
-                                ->columnSpanFull()
-                                ->readOnly(),
-                            TextInput::make('sub')
-                                ->columnSpanFull()
-                                ->readOnly(),
-                            TextInput::make('kegiatan')
-                                ->columnSpanFull()
-                                ->readOnly(),
-                            TextInput::make('durasi')
-                                ->disabled(),
-                            Hidden::make('waktu')
-                                ->required(),
-                            Hidden::make('indikator_waktu')
-                                ->required(),
-                            Textarea::make('keluaran')
-                                ->columnSpanFull()
-                                ->rows(3)
-                                ->required()
-                        ])
-                ])
-                ->action(
-                    function ($data) {
-                        try {
-                            $data['rab_id'] = $this->record->id;
-
-                            $check = RencanaAnggaranBiayaBidang::where('rkkbd_id', $data['rkkbd_id'])
-                                ->where('rab_id', $this->record->id)
-                                ->first();
-
-                            if($check) {
-                                notif('Notifikasi RAB', 'Bidang RKK sudah ada pada RAB ini.');
-                            } else {
-                                RencanaAnggaranBiayaBidang::create($data);
-
-                                notif('Notifikasi RAB', 'Bidang RKK telah berhasil ditambahkan.');
-                            }
-                        } catch (Exception $e) {
-                            notif();
-                        }
-                    }
-                )
+            $this->tambahBidang()
         ];
     }
 
@@ -141,7 +58,7 @@ class LihatRAB extends Page
             ->schema([
                 Grid::make(3)
                     ->schema([
-                        Select::make('rkkbd_id')
+                        Select::make('apbdrsu_id')
                             ->label('Nama Kegiatan')
                             ->allowHtml()
                             ->required()
@@ -151,31 +68,38 @@ class LihatRAB extends Page
                             ->options(
                                 function () : array {
                                     $res = [];
-                                    $rkk = $this->record->rkk;
+                                    $apbd = $this->record->apbd;
 
-                                    $kegiatans = $rkk->kegiatans;
+                                    $kegiatans = $apbd->rincianSubUtamas()->whereNotNull('bidang_id')->get();
 
                                     foreach ($kegiatans as $keg) {
-                                        $res[$keg->id] = '<span class="font-bold">'.$keg->nama_sub.'</span><div class="text-sm">'. $keg->kegiatan->kode .' : '.$keg->nama_kegiatan.'</div>'; 
+                                        $res[$keg->id] = '<span class="font-bold">'.$keg->bidang->nama.'</span><div class="text-sm">Rp. '. number_format($keg->menjadi) .'</div>'; 
                                     }
 
                                     return $res;
                                 }
-                            )
-                            ->afterStateUpdated(
+                            )->afterStateUpdated(
                                 function ($set, $state) {
-                                    $kegiatan = RencanaKerjaKegiatanBidangDetail::find($state);
+                                    $apbdrsu = APBDRincianSubUtama::find($state);
+                                    $sub = $apbdrsu->bidang->getParent();
+                                    $main = $sub->getParent();
 
-                                    $sub = $kegiatan->kegiatan->getParent();
+                                    if($apbdrsu){
+                                        $set('bidang', $main->kode . ' ' .$main->nama);
+                                        $set('sub', $sub->kode .' '. $sub->nama);
+                                        $set('kegiatan', $apbdrsu->bidang->kode .' ' . $apbdrsu->bidang->nama);
+                                        $set('kode_kegiatan', $apbdrsu->bidang->kode);
+                                        $set('main_bidang_id', $main->id);
+                                        $set('sub_bidang_id', $sub->id);
+                                        $set('bidang_id', $apbdrsu->bidang->id);
 
-                                    $set('bidang', $kegiatan->bidang->bidang->kode . ' ' .$kegiatan->bidang->nama_bidang);
-                                    $set('sub', $sub->kode .' '. $sub->nama);
-                                    $set('kegiatan', $kegiatan->kegiatan->kode .' ' . $kegiatan->kegiatan->nama);
-                                    $set('waktu', $kegiatan->durasi);
-                                    $set('indikator_waktu', $kegiatan->satuan_durasi);
-                                    $set('durasi', $kegiatan->durasi . ' ' . $kegiatan->satuan_durasi);
+                                    }
                                 }
                             ),
+                        Hidden::make('main_bidang_id'),
+                        Hidden::make('sub_bidang_id'),
+                        Hidden::make('bidang_id'),
+                        Hidden::make('kode_kegiatan'),
                         TextInput::make('bidang')
                             ->columnSpanFull()
                             ->readOnly(),
@@ -185,11 +109,9 @@ class LihatRAB extends Page
                         TextInput::make('kegiatan')
                             ->columnSpanFull()
                             ->readOnly(),
-                        TextInput::make('durasi')
-                            ->disabled(),
-                        Hidden::make('waktu')
+                        TextInput::make('waktu')
                             ->required(),
-                        Hidden::make('indikator_waktu')
+                        TextInput::make('indikator_waktu')
                             ->required(),
                         Textarea::make('keluaran')
                             ->columnSpanFull()
@@ -201,8 +123,9 @@ class LihatRAB extends Page
                 function ($data) {
                     try {
                         $data['rab_id'] = $this->record->id;
+                        $data['apbd_id'] = $this->record->apbd_id;
 
-                        $check = RencanaAnggaranBiayaBidang::where('rkkbd_id', $data['rkkbd_id'])
+                        $check = RencanaAnggaranBiayaBidang::where('apbdrsu_id', $data['apbdrsu_id'])
                             ->where('rab_id', $this->record->id)
                             ->first();
 
@@ -214,6 +137,7 @@ class LihatRAB extends Page
                             notif('Notifikasi RAB', 'Bidang RKK telah berhasil ditambahkan.');
                         }
                     } catch (Exception $e) {
+                        dd($e);
                         notif();
                     }
                 }
@@ -234,33 +158,26 @@ class LihatRAB extends Page
                         TextInput::make('judul')
                             ->columnSpan(3)
                             ->required(),
-                        Select::make('rkkbd_id')
-                            ->label('Nama Kegiatan')
+                        Select::make('kegiatan_id')
+                            ->label('Daftar Kegiatan Berdasarkan Bidang')
                             ->allowHtml()
                             ->required()
                             ->searchable()
                             ->columnSpanFull()
                             ->live(onBlur:true)
                             ->options(
-                                function () : array {
+                                function ($livewire) : array {
                                     $res = [];
-                                    $rkk = $this->record->rkk;
+                                    $arguments = $livewire->mountedActions[0]['arguments'];
 
-                                    $kegiatans = $rkk->kegiatans;
+                                    $rabb = RencanaAnggaranBiayaBidang::find($arguments['rabb_id']);
+                                    $kas = ParameterKegiatan::where('kode', $rabb->kode_kegiatan)->get();
 
-                                    foreach ($kegiatans as $keg) {
-                                        $res[$keg->id] = '<span class="font-bold">'.$keg->nama_kegiatan.'</span><div class="text-sm">Rp. '. number_format($keg->sumber_biaya) .'</div>'; 
+                                    foreach ($kas as $k) {
+                                        $res[$k->id] = '<span class="font-bold">'.$k->kode.'</span><div class="text-sm">'.$k->uraian_output.'</div>'; 
                                     }
 
                                     return $res;
-                                }
-                            )->afterStateUpdated(
-                                function ($set, $state) {
-                                    $rkkbd = RencanaKerjaKegiatanBidangDetail::find($state);
-
-                                    if($rkkbd){
-                                        $set('jumlah_kas', $rkkbd->sumber_biaya);
-                                    }
                                 }
                             ),
                         Select::make('kas_id')
@@ -284,9 +201,9 @@ class LihatRAB extends Page
                             ),
                         TextInput::make('jumlah_kas')
                             ->required()
-                            ->numeric()
                             ->prefix('Rp.')
-                            ->readOnly(),
+                            ->mask(RawJs::make('$money($input)'))
+                            ->stripCharacters(','),
                     ])
             ])
             ->action(
@@ -301,7 +218,7 @@ class LihatRAB extends Page
 
                         $check = RencanaAnggaranBiayaUraian::where('rabb_id', $data['rabb_id'])
                             ->where('rab_id', $this->record->id)
-                            ->where('rkkbd_id', $data['rkkbd_id'])
+                            ->where('kegiatan_id', $data['kegiatan_id'])
                             ->first();
 
                         if($check) {
@@ -341,9 +258,12 @@ class LihatRAB extends Page
                             ->columnSpanFull()
                             ->live(onBlur:true)
                             ->options(
-                                function () : array {
+                                function ($livewire) : array {
                                     $res = [];
-                                    $kas = ParameterKas::where('tipe', 'child')->get();
+                                    $arguments = $livewire->mountedActions[0]['arguments'];
+                                    $rabu = RencanaAnggaranBiayaUraian::find($arguments['rabu_id']);
+
+                                    $kas = ParameterKas::where('parent_kode', $rabu->kode_kas)->get();
 
                                     foreach ($kas as $k) {
                                         $res[$k->id] = '<span class="font-bold">'.$k->kode.'</span><div class="text-sm">'.$k->nama.'</div>'; 
@@ -357,6 +277,21 @@ class LihatRAB extends Page
                             ->required(),
                         TextInput::make('indikator')
                             ->placeholder('Org/Buah, Kotak, Rim dll')
+                            ->default(
+                                function ($livewire) {
+                                    $arguments = $livewire->mountedActions[0]['arguments'];
+                                    $rabu_id = $arguments['rabu_id'];
+
+                                    $data = RencanaAnggaranBiayaUraian::find($rabu_id);
+
+                                    if($data){
+                                        return $data->kegiatan->satuan_output;
+                                    }
+                                }
+                            )
+                            ->required(),
+                        TextInput::make('kode_satuan')
+                            ->placeholder('ADD, PBH, DLL')
                             ->required(),
                         TextInput::make('harga_satuan')
                             ->columnSpan(2)
@@ -405,7 +340,7 @@ class LihatRAB extends Page
 
                     if($data){
                         $res = [
-                            'rkkbd_id' => $data->rkkbd_id,
+                            'apbdrsu_id' => $data->apbdrsu_id,
                             'bidang' => $data->bidang,
                             'sub' => $data->sub,
                             'kegiatan' => $data->kegiatan,
@@ -413,6 +348,10 @@ class LihatRAB extends Page
                             'waktu' => $data->waktu,
                             'indikator_waktu' => $data->indikator_waktu,
                             'keluaran' => $data->keluaran,
+                            'main_bidang_id' => $data->main_bidang_id,
+                            'sub_bidang_id' => $data->sub_bidang_id,
+                            'bidang_id' => $data->bidang_id,
+                            'kode_kegiatan' => $data->kode_kegiatan,
                         ];
                     }
 
@@ -422,7 +361,7 @@ class LihatRAB extends Page
             ->schema([
                 Grid::make(3)
                     ->schema([
-                        Select::make('rkkbd_id')
+                        Select::make('apbdrsu_id')
                             ->label('Nama Kegiatan')
                             ->allowHtml()
                             ->required()
@@ -432,31 +371,38 @@ class LihatRAB extends Page
                             ->options(
                                 function () : array {
                                     $res = [];
-                                    $rkk = $this->record->rkk;
+                                    $apbd = $this->record->apbd;
 
-                                    $kegiatans = $rkk->kegiatans;
+                                    $kegiatans = $apbd->rincianSubUtamas()->whereNotNull('bidang_id')->get();
 
                                     foreach ($kegiatans as $keg) {
-                                        $res[$keg->id] = '<span class="font-bold">'.$keg->nama_sub.'</span><div class="text-sm">'. $keg->kegiatan->kode .' : '.$keg->nama_kegiatan.'</div>'; 
+                                        $res[$keg->id] = '<span class="font-bold">'.$keg->bidang->nama.'</span><div class="text-sm">Rp. '. number_format($keg->menjadi) .'</div>'; 
                                     }
 
                                     return $res;
                                 }
-                            )
-                            ->afterStateUpdated(
+                            )->afterStateUpdated(
                                 function ($set, $state) {
-                                    $kegiatan = RencanaKerjaKegiatanBidangDetail::find($state);
+                                    $apbdrsu = APBDRincianSubUtama::find($state);
+                                    $sub = $apbdrsu->bidang->getParent();
+                                    $main = $sub->getParent();
 
-                                    $sub = $kegiatan->kegiatan->getParent();
+                                    if($apbdrsu){
+                                        $set('bidang', $main->kode . ' ' .$main->nama);
+                                        $set('sub', $sub->kode .' '. $sub->nama);
+                                        $set('kegiatan', $apbdrsu->bidang->kode .' ' . $apbdrsu->bidang->nama);
+                                        $set('kode_kegiatan', $apbdrsu->bidang->kode);
+                                        $set('main_bidang_id', $main->id);
+                                        $set('sub_bidang_id', $sub->id);
+                                        $set('bidang_id', $apbdrsu->bidang->id);
 
-                                    $set('bidang', $kegiatan->bidang->bidang->kode . ' ' .$kegiatan->bidang->nama_bidang);
-                                    $set('sub', $sub->kode .' '. $sub->nama);
-                                    $set('kegiatan', $kegiatan->kegiatan->kode .' ' . $kegiatan->kegiatan->nama);
-                                    $set('waktu', $kegiatan->durasi);
-                                    $set('indikator_waktu', $kegiatan->satuan_durasi);
-                                    $set('durasi', $kegiatan->durasi . ' ' . $kegiatan->satuan_durasi);
+                                    }
                                 }
                             ),
+                        Hidden::make('main_bidang_id'),
+                        Hidden::make('sub_bidang_id'),
+                        Hidden::make('bidang_id'),
+                        Hidden::make('kode_kegiatan'),
                         TextInput::make('bidang')
                             ->columnSpanFull()
                             ->readOnly(),
@@ -466,11 +412,9 @@ class LihatRAB extends Page
                         TextInput::make('kegiatan')
                             ->columnSpanFull()
                             ->readOnly(),
-                        TextInput::make('durasi')
-                            ->disabled(),
-                        Hidden::make('waktu')
+                        TextInput::make('waktu')
                             ->required(),
-                        Hidden::make('indikator_waktu')
+                        TextInput::make('indikator_waktu')
                             ->required(),
                         Textarea::make('keluaran')
                             ->columnSpanFull()
@@ -527,35 +471,6 @@ class LihatRAB extends Page
                         TextInput::make('judul')
                             ->columnSpan(3)
                             ->required(),
-                        Select::make('rkkbd_id')
-                            ->label('Nama Kegiatan')
-                            ->allowHtml()
-                            ->required()
-                            ->searchable()
-                            ->columnSpanFull()
-                            ->live(onBlur:true)
-                            ->options(
-                                function () : array {
-                                    $res = [];
-                                    $rkk = $this->record->rkk;
-
-                                    $kegiatans = $rkk->kegiatans;
-
-                                    foreach ($kegiatans as $keg) {
-                                        $res[$keg->id] = '<span class="font-bold">'.$keg->nama_kegiatan.'</span><div class="text-sm">Rp. '. number_format($keg->sumber_biaya) .'</div>'; 
-                                    }
-
-                                    return $res;
-                                }
-                            )->afterStateUpdated(
-                                function ($set, $state) {
-                                    $rkkbd = RencanaKerjaKegiatanBidangDetail::find($state);
-
-                                    if($rkkbd){
-                                        $set('jumlah_kas', $rkkbd->sumber_biaya);
-                                    }
-                                }
-                            ),
                         Select::make('kas_id')
                             ->label('Jenis Kas')
                             ->allowHtml()
@@ -747,6 +662,114 @@ class LihatRAB extends Page
                     }
 
                     notif('Notifikasi RAB', 'Detail uraian telah berhasil dihapus.');
+                }
+            );
+    }
+
+    
+    public function tambahDetailMassal() : Action {
+        return Action::make('tambahDetailMassal')
+            ->label('Tambah Detail Massal')
+            ->extraAttributes([
+                'class' => 'btn-add-detail'
+            ])
+            ->icon(Heroicon::Plus)
+            ->closeModalByClickingAway(false)
+            ->schema([
+                Grid::make(3)
+                    ->schema([
+                        Select::make('kas_id')
+                            ->label('Jenis Kas')
+                            ->allowHtml()
+                            ->required()
+                            ->searchable()
+                            ->columnSpanFull()
+                            ->live(onBlur:true)
+                            ->options(
+                                function ($livewire) : array {
+                                    $res = [];
+                                    $arguments = $livewire->mountedActions[0]['arguments'];
+                                    $rabu = RencanaAnggaranBiayaUraian::find($arguments['rabu_id']);
+
+                                    $kas = ParameterKas::where('parent_kode', $rabu->kode_kas)->get();
+
+                                    foreach ($kas as $k) {
+                                        $res[$k->id] = '<span class="font-bold">'.$k->kode.'</span><div class="text-sm">'.$k->nama.'</div>'; 
+                                    }
+
+                                    return $res;
+                                }
+                            ),
+                        Repeater::make('details')
+                            ->collapsible()
+                            ->columnSpanFull()
+                            ->required()
+                            ->minItems(1)
+                            ->schema([
+                                Grid::make(3)
+                                    ->schema([
+                                        TextInput::make('judul')
+                                            ->columnSpan(3)
+                                            ->required(),
+                                        TextInput::make('volume')
+                                            ->numeric()
+                                            ->required(),
+                                        TextInput::make('indikator')
+                                            ->placeholder('Org/Buah, Kotak, Rim dll')
+                                            ->default(
+                                                function ($livewire) {
+                                                    $arguments = $livewire->mountedActions[0]['arguments'];
+                                                    $rabu_id = $arguments['rabu_id'];
+
+                                                    $data = RencanaAnggaranBiayaUraian::find($rabu_id);
+
+                                                    if($data){
+                                                        return $data->kegiatan->satuan_output;
+                                                    }
+                                                }
+                                            )
+                                            ->required(),
+                                        TextInput::make('kode_satuan')
+                                            ->placeholder('ADD, PBH, DLL')
+                                            ->required(),
+                                        TextInput::make('harga_satuan')
+                                            ->columnSpan(3)
+                                            ->prefix('Rp.')
+                                            ->mask(RawJs::make('$money($input)'))
+                                            ->stripCharacters(',')
+                                            ->required(),
+                                    ])
+                            ])
+                        
+                    ])
+            ])
+            ->action(
+                function ($data, $arguments) {
+                    try {
+                        foreach($data['details'] as $d){
+                            $kas = ParameterKas::find($data['kas_id']);
+                            
+                            $data['rab_id'] = $this->record->id;
+                            $data['rabb_id'] = $arguments['rabb_id'];
+                            $data['rabu_id'] = $arguments['rabu_id'];
+
+                            $data['kode_kas'] = $kas->kode;
+                            $data['nama_kas'] = $kas->nama;
+                            
+                            $data['judul'] = $d['judul'];
+                            $data['volume'] = $d['volume'];
+                            $data['indikator'] = $d['indikator'];
+                            $data['harga_satuan'] = $d['harga_satuan'];
+                            $data['jumlah'] = $data['volume'] * $data['harga_satuan'];
+
+                            RencanaAnggaranBiayaUraianDetail::create($data);
+                        }
+
+                        notif('Notifikasi RAB', 'Detai Uraian telah berhasil ditambahkan.');
+                    } catch (Exception $e) {
+                        dd($e);
+                        notif();
+                    }
                 }
             );
     }

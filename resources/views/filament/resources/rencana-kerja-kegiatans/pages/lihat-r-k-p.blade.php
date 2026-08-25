@@ -3,145 +3,198 @@
 
     <div class="page">
 
-        <!-- ===== HEADER PANEL ===== -->
-        <div class="header-panel">
-            <div class="header-inner">
-                <div class="header-left">
-                    <div class="seal"><span>RKK</span></div>
-                    <div>
-                        <p class="header-eyebrow">Pemerintah Desa Pecatu &middot; Kecamatan Kuta Selatan</p>
-                        <h1 class="header-title font-display">Rencana Kerja Kegiatan</h1>
-                        <p class="header-sub">Tahun Anggaran {{ $record->tahun }} &nbsp;&middot;&nbsp; Sumber Dana: Dana Desa &amp; PADes
-                        </p>
-                    </div>
-                </div>
-                <div class="header-right">
-                    <span class="status-pill"><span class="status-dot"></span>Sedang Berjalan</span>
-                    <p class="updated-line">Terakhir diupdate&nbsp;&middot;&nbsp;<span class="updated-value capitalize">{{ toCarbon($record->updated_at, 'Y-m-d H:i:s', 'D, d F Y H:i A') }}</span></p>
-                </div>
+        <header class="doc-header">
+            <div class="eyebrow">Rencana Kerja Pemerintah Desa</div>
+            <h1 class="capitalize">{{ $record->judul }}<br>Tahun {{ $record->tahun }}</h1>
+            <div class="sub">Rincian bidang, jenis kegiatan, lokasi, volume, biaya, sasaran, dan jadwal pelaksanaan
             </div>
-        </div>
 
-        <!-- ===== SUMMARY STATS (statis) ===== -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <p class="stat-label">Total Bidang</p>
-                <p class="stat-value">{{ $record->bidangs()->count() }}</p>
-            </div>
-            <div class="stat-card">
-                <p class="stat-label">Total Kegiatan</p>
-                <p class="stat-value">{{ $record->kegiatans()->count(); }}</p>
-            </div>
-            <div class="stat-card">
-                <p class="stat-label">Total Anggaran</p>
-                <p class="stat-value mono">Rp {{ number_format($total_anggaran) }}</p>
-            </div>
-            <div class="stat-card">
-                <p class="stat-label">Total Sasaran Penerima</p>
-                <p class="stat-value">{{ number_format($total_sasaran) }} orang</p>
-            </div>
-        </div>
-
-        @php
-            $nomor = 0;
-        @endphp
-        @foreach ($record->bidangs as $bidang)
-            @php
-                $nomor++;
-            @endphp
-            <!-- ===== BIDANG 1 (diulang berurutan ke bawah untuk setiap bidang) ===== -->
-            <div class="bidang-section">
-                <div class="bidang-heading-row">
-                    <div class="bidang-heading-left">
-                        {{ $this->deleteBidang()(['id' => $bidang->id]) }}
-                        <span class="bidang-index">{{ $nomor }}</span>
-                        <span class="bidang-title">{{ $bidang->bidang->kode }} &mdash; Daftar Kegiatan <span class="bidang-desc capitalize">{{ $bidang->nama_bidang }}</span></span>
-                    </div>
-                    {{-- <button class="btn btn-gold"><span class="btn-icon">＋</span> Tambah Kegiatan</button> --}}
-                    {{ $this->tambahKegiatan($bidang->id)(['id' => $bidang->id]) }}
+            <div class="head-meta">
+                <div class="field">
+                    <div class="label">Desa</div>
+                    <div class="value">Pemerintah Desa Pecatu</div>
                 </div>
-                <div class="panel table-panel">
-                    <div class="table-panel-head">
-                        <p class="table-hint">Gulir ke samping untuk melihat kolom lainnya &rarr;</p>
-                    </div>
-                    <div class="table-scroll">
-                        <table class="rkk-table">
-                            <thead>
-                                <tr>
-                                    <th rowspan="2" style="width:56px;">KD</th>
-                                    <th colspan="2" class="grp-end">Bidang/Sub Bidang/Jenis Kegiatan</th>
-                                    <th rowspan="2" style="width:150px;">Lokasi</th>
-                                    <th rowspan="2" style="width:70px;">Volume</th>
-                                    <th rowspan="2" style="width:80px;">Satuan</th>
-                                    <th rowspan="2" style="width:170px;" class="grp-end">Biaya dan<br>Sumber Dana</th>
-                                    <th colspan="4" class="grp-end">Sasaran</th>
-                                    <th colspan="3" class="grp-end">Waktu Pelaksanaan</th>
-                                    <th rowspan="2" style="width:150px;">Pelaksana<br>Kegiatan Anggaran</th>
-                                    <th rowspan="2" style="width:150px;">Tim yang<br>Melaksanakan</th>
-                                </tr>
-                                <tr>
-                                    <th style="width:170px;">Bidang/Sub Bidang</th>
-                                    <th style="width:210px;" class="grp-end">Jenis Kegiatan</th>
-                                    <th style="width:70px;">Jumlah</th>
-                                    <th style="width:72px;">Laki laki</th>
-                                    <th style="width:78px;">Perempuan</th>
-                                    <th style="width:64px;" class="grp-end">A-RTM</th>
-                                    <th style="width:80px;">Durasi</th>
-                                    <th style="width:88px;">Mulai</th>
-                                    <th style="width:88px;">Selesai</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @php
-                                    $total = 0;
-                                @endphp
-                                @foreach ($bidang->kegiatans as $kg)
+                <div class="field">
+                    <div class="label">Kecamatan</div>
+                    <div class="value">Kecamatan Kuta Selatan</div>
+                </div>
+                <div class="field">
+                    <div class="label">Kabupaten / Kota</div>
+                    <div class="value">Kabupaten Badung</div>
+                </div>
+                <div class="field">
+                    <div class="label">Provinsi</div>
+                    <div class="value">Provinsi Bali</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="content-card">
+            <div class="card-title">
+                <h2>1. Bidang Penyelenggaraan Pemerintahan Desa</h2>
+                <span class="hint">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18l6-6-6-6" />
+                    </svg>
+                    Geser tabel untuk melihat kolom lainnya
+                </span>
+            </div>
+
+            <div class="table-scroll">
+                <table class="rkp">
+                    <thead>
+                        <tr>
+                            <th rowspan="3" style="width:44px">KD</th>
+                            <th colspan="2" rowspan="2">Bidang / Sub Bidang / Jenis Kegiatan</th>
+                            <th rowspan="3" style="width:110px">Lokasi</th>
+                            <th rowspan="3" style="width:64px">Volume</th>
+                            <th rowspan="3" style="width:70px">Satuan</th>
+                            <th rowspan="3" style="width:140px">Biaya dan Sumber Dana</th>
+                            <th colspan="4">Sasaran</th>
+                            <th colspan="3">Waktu Pelaksanaan</th>
+                            <th rowspan="3" style="width:150px">Pelaksana Kegiatan Anggaran</th>
+                            <th rowspan="3" style="width:110px">Tim yang Melaksanakan</th>
+                        </tr>
+                        <tr class="subrow">
+                            <th style="width:56px">Jumlah</th>
+                            <th style="width:56px">Laki Laki</th>
+                            <th style="width:66px">Perempuan</th>
+                            <th style="width:56px">A-RTM</th>
+                            <th style="width:64px">Durasi</th>
+                            <th style="width:64px">Mulai</th>
+                            <th style="width:64px">Selesai</th>
+                        </tr>
+                        <tr class="numrow">
+                            <th>2</th>
+                            <th>3</th>
+                            <th>4</th>
+                            <th>5</th>
+                            <th>6</th>
+                            <th>7</th>
+                            <th>8</th>
+                            <th>9</th>
+                            <th>10</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @php
+                            $rab = $record->rab;
+                            $jumlah_total = 0;
+
+                            $goupBidangs = $rab->groupOfMainBidang();
+                        @endphp
+                        @foreach ($goupBidangs as $gb)
+                            @php
+                                $bid = getBidang($gb->main_bidang_id);
+                                $bidangs = getRabBidang($rab->id, $gb->main_bidang_id);
+                            @endphp
+                            <tr class="grp">
+                                <td class="kd">{{ $bid->kode }}</td>
+                                <td colspan="15">{{ $bid->nama }}</td>
+                            </tr>
+
+                            @foreach ($bidangs as $bidang)
+                                @foreach ($bidang->uraian_details as $urd)
                                     @php
-                                        $kkg = $kg->kegiatan;
-                                        $j = ($kg->laki_laki + $kg->perempuan + $kg->artm);
-                                        $total += $kg->sumber_biaya;
-                                        $total_sasaran += $j;
+                                        $jumlah_total += $urd->jumlah;
                                     @endphp
                                     <tr>
-                                        <td class="cell-kd">
-                                            {{ $kkg->kode }}
-
-                                            <div class="di mt-2 flex flex-row items-center justify-center">
-                                                {{ $this->editKegiatan()(['kegiatan_id' => $kg->id]) }}
-                                                {{ $this->deleteKegiatan()(['kegiatan_id' => $kg->id]) }}
-                                            </div>
+                                        <td class="kd"></td>
+                                        <td colspan="2">
+                                            <div>{{ $bidang->ssub->nama }}</div>
+                                            <div style="color:var(--text-soft); font-style:italic; margin-top:3px;">
+                                                {{ $bidang->skegiatan->nama }}</div>
                                         </td>
-                                        <td>{{ $kg->nama_sub }}</td>
-                                        <td>{{ $kg->nama_kegiatan }}</td>
-                                        <td>{{ $kg->lokasi }}</td>
-                                        <td class="cell-center">{{ $kg->volume }}</td>
-                                        <td class="cell-center"><span class="badge-satuan">{{ $kg->satuan }}</span></td>
-                                        <td class="cell-num">Rp {{ number_format($kg->sumber_biaya) }} ({{ $kg->sumber_kode }})</td>
-                                        <td class="cell-center">{{ $j }}</td>
-                                        <td class="cell-center">{{ $kg->laki_laki }}</td>
-                                        <td class="cell-center">{{ $kg->perempuan }}</td>
-                                        <td class="cell-center">{{ $kg->artm }}</td>
-                                        <td class="cell-center">{{ $kg->durasi }} {{ $kg->satuan_durasi }}</td>
-                                        <td class="cell-center">{{ toCarbon($kg->mulai, 'Y-m-d', 'F Y') }}</td>
-                                        <td class="cell-center">{{ toCarbon($kg->selesai, 'Y-m-d', 'F Y') }}</td>
-                                        <td>{{ $kg->pelaksana_kegiatan }}</td>
-                                        <td>-</td>
+                                        <td>Desa Pecatu</td>
+                                        <td class="num">{{ $urd->volume }}</td>
+                                        <td class="center">{{ $urd->indikator }}</td>
+                                        <td class="num">{{ number_format($urd->jumlah) }}<span
+                                                class="sumber-dana uppercase">{{ $urd->kode_satuan }}</span></td>
+                                        <td class="sasaran">1</td>
+                                        <td class="sasaran">1</td>
+                                        <td class="sasaran">0</td>
+                                        <td class="sasaran">0</td>
+                                        <td class="center">{{ $bidang->waktu }} {{ $bidang->indikator_waktu }}</td>
+                                        <td class="center">-</td>
+                                        <td class="center">-</td>
+                                        <td>Kepala Seksi Pemerintahan</td>
+                                        <td></td>
                                     </tr>
                                 @endforeach
-                                
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                @php
-                    $total_anggaran += $total;
-                @endphp
-                <div class="total-row">
-                    <span class="total-label">Jumlah Anggaran &mdash; Bidang {{ $bidang->bidang->kode }} &mdash; Daftar Kegiatan<span class="bidang-desc capitalize">{{ $bidang->nama_bidang }}</span></span>
-                    <span class="total-value">Rp {{ number_format($total) }}</span>
-                </div>
+                            @endforeach
+                        @endforeach
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="6" style="text-align:right; font-weight:700; color:var(--pecatu-navy);">
+                                Jumlah Total Biaya</td>
+                            <td class="num" style="font-weight:700; font-size:12.5px; color:var(--pecatu-navy);">
+                                {{ number_format($jumlah_total) }}</td>
+                            <td colspan="9"></td>
+                        </tr>
+                    </tfoot>
+                </table>
             </div>
-        @endforeach
+        </div>
 
     </div>
+
+    <!-- ===== FLOATING MENU CETAK ===== -->
+    <div class="fab-backdrop" id="fabBackdrop"></div>
+    <div class="fab-container" id="fabContainer">
+        <div class="fab-menu" id="fabMenu">
+            <span class="fab-menu-label">Menu Cetak</span>
+            <a class="fab-item fab-open" href="{{ route('print.rkk', ['id' => $record->id]) }}" target="_blank"
+                rel="noopener">
+                <span class="fab-item-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                        <path d="M14 2v6h6" />
+                    </svg>
+                </span>
+                Buka Halaman Cetak
+            </a>
+            <a href="{{ route('download.rkk', ['id' => $record->id]) }}" download class="fab-item fab-quick" id="btnQuickPrint" type="button">
+                <span class="fab-item-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 9V2h12v7" />
+                        <path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" />
+                        <path d="M6 14h12v8H6z" />
+                    </svg>
+                </span>
+                Cetak Halaman Ini
+            </a>
+        </div>
+        <button class="fab-main" id="fabMain" type="button" aria-expanded="false" aria-label="Buka menu cetak">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 9V2h12v7" />
+                <path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" />
+                <path d="M6 14h12v8H6z" />
+            </svg>
+        </button>
+    </div>
+
+    <script>
+        // Seluruh JS di halaman ini murni untuk efek tampilan — tidak ada data yang digenerate.
+        var fabContainer = document.getElementById('fabContainer');
+        var fabMain = document.getElementById('fabMain');
+        var fabBackdrop = document.getElementById('fabBackdrop');
+        var btnQuickPrint = document.getElementById('btnQuickPrint');
+
+        function setFabOpen(open) {
+            fabContainer.classList.toggle('is-open', open);
+            fabBackdrop.classList.toggle('is-visible', open);
+            fabMain.setAttribute('aria-expanded', String(open));
+        }
+
+        fabMain.addEventListener('click', function() {
+            setFabOpen(!fabContainer.classList.contains('is-open'));
+        });
+        fabBackdrop.addEventListener('click', function() {
+            setFabOpen(false);
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') setFabOpen(false);
+        });
+    </script>
 </x-filament-panels::page>

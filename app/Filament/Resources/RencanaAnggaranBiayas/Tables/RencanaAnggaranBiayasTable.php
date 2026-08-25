@@ -19,8 +19,6 @@ class RencanaAnggaranBiayasTable
     {
         return $table
             ->columns([
-                TextColumn::make('rkk.judul')
-                    ->sortable(),
                 TextColumn::make('judul')
                     ->searchable(),
                 TextColumn::make('tahun')

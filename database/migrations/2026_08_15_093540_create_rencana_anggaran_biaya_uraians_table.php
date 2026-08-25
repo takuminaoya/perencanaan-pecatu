@@ -21,9 +21,7 @@ return new class extends Migration
             $table->foreignIdFor(RencanaAnggaranBiaya::class, 'rab_id')->constrained()->cascadeOnDelete();
             $table->foreignIdFor(RencanaAnggaranBiayaBidang::class, 'rabb_id')->constrained()->cascadeOnDelete();
 
-            // ini parameter untuk main kas cth : Belanja
             $table->string('judul')->nullable();
-            $table->foreignIdFor(RencanaKerjaKegiatanBidangDetail::class, 'rkkbd_id')->nullable();
             $table->foreignIdFor(ParameterKas::class, 'kas_id')->nullable()->constrained()->cascadeOnUpdate()->nullOnDelete();
             $table->string('kode_kas')->nullable();
             $table->string('nama_kas')->nullable();

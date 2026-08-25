@@ -16,9 +16,6 @@ return new class extends Migration
         Schema::create('ep_rencana_anggaran_biaya_bidangs', function (Blueprint $table) {
             $table->id();
             $table->foreignIdFor(RencanaAnggaranBiaya::class, 'rab_id')->constrained()->cascadeOnDelete();
-
-            $table->foreignIdFor(RencanaKerjaKegiatanBidangDetail::class, 'rkkbd_id')->nullable();
-
             // text untuk mempercepat filter
             $table->string('bidang')->nullable();
             $table->string('sub')->nullable();

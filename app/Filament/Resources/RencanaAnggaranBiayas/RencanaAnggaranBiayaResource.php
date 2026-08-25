@@ -24,7 +24,7 @@ class RencanaAnggaranBiayaResource extends Resource
 {
     protected static ?string $model = RencanaAnggaranBiaya::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::Banknotes;
 
     protected static ?string $recordTitleAttribute = 'judul';
 

@@ -24,7 +24,7 @@ class RencanaKerjaKegiatanResource extends Resource
 {
     protected static ?string $model = RencanaKerjaKegiatan::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::DocumentText;
 
     protected static ?string $recordTitleAttribute = 'judul';
 

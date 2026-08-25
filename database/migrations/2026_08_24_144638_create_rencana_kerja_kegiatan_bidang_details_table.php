@@ -17,7 +17,7 @@ return new class extends Migration
         Schema::create('ep_rencana_kerja_kegiatan_bidang_details', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignIdFor(RencanaKerjaKegiatanBidang::class, 'bidang_id')->constrained()->cascadeOnDelete();
+            $table->foreignIdFor(RencanaKerjaKegiatanBidang::class, 'rkkb_id')->constrained()->cascadeOnDelete();
             $table->foreignIdFor(RencanaKerjaKegiatan::class, 'rkp_id')->constrained();
             $table->foreignIdFor(ParameterBidang::class, 'kegiatan_id')->constrained();
 

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\RencanaAnggaranBiayas\Schemas;
 
+use App\Models\AnggaranPendapatanBelanjaDesa;
 use App\Models\RencanaKerjaKegiatan;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
@@ -18,12 +19,11 @@ class RencanaAnggaranBiayaForm
                 Hidden::make('uuid')
                     ->label('UUID')
                     ->default(fn () : string => Str::uuid()),
-                Select::make('rkk_id')
-                    ->label('Rencana Kerja Kegiatan')
+                Select::make('apbd_id')
+                    ->label('Kaitkan APBD Pada RAB ini')
                     ->required()
-                    ->options(
-                        RencanaKerjaKegiatan::query()->pluck('judul', 'id')
-                    ),
+                    ->searchable()
+                    ->options(AnggaranPendapatanBelanjaDesa::query()->pluck('judul', 'id')),
                 TextInput::make('judul')
                     ->required()
                     ->default('rencana anggaran biaya'),

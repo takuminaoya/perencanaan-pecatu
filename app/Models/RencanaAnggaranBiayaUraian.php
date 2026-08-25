@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\ParameterKegiatan;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -17,5 +18,9 @@ class RencanaAnggaranBiayaUraian extends Model
 
     public function rabud() : HasMany {
         return $this->hasMany(RencanaAnggaranBiayaUraianDetail::class, 'rabu_id');
+    }
+
+    public function kegiatan() : BelongsTo {
+        return $this->belongsTo(ParameterKegiatan::class, 'kegiatan_id');
     }
 }

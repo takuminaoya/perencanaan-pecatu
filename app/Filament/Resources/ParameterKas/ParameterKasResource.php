@@ -23,7 +23,7 @@ class ParameterKasResource extends Resource
 {
     protected static ?string $model = ParameterKas::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::CreditCard;
 
     protected static string|UnitEnum|null $navigationGroup = 'Manajemen Masterdata';
 
