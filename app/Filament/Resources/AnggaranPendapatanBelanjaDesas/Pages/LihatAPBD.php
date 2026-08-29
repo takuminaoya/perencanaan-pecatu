@@ -6,16 +6,23 @@ use App\Filament\Resources\AnggaranPendapatanBelanjaDesas\AnggaranPendapatanBela
 use App\Models\APBDDetailMain;
 use App\Models\APBDDetailSub;
 use App\Models\APBDDetailSubMain;
+use App\Models\APBDRicianChildDetail;
+use App\Models\APBDRicianSubChild;
 use App\Models\APBDRincianSubUtama;
 use App\Models\APBDRincianUtama;
 use App\Models\ParameterBidang;
 use App\Models\ParameterKas;
+use App\Models\ParameterKegiatan;
+use App\Models\ParameterSumberDana;
 use Exception;
 use Filament\Actions\Action;
 use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Pages\Concerns\InteractsWithRecord;
 use Filament\Resources\Pages\Page;
 use Filament\Schemas\Components\Grid;
@@ -330,6 +337,9 @@ class LihatAPBD extends Page
      */
     public mixed $apbdsm_id = null;
     public mixed $parent_bidang_id = null;
+    public mixed $bidang_id = null;
+    public mixed $tipe = 'masuk';
+
     public function tambahRincianUtama() : Action {
         return Action::make('tambahRincianUtama')
             ->label('Tambah Rincian')
@@ -369,14 +379,64 @@ class LihatAPBD extends Page
                                 'masuk' => 'Pemasukan/Pendapatan',
                                 'keluar' => 'Pengeluaran/Belanja',
                             ])
+                            ->afterStateUpdated(fn ($state) => $this->tipe = $state)
                             ->default('masuk'),
+                        Select::make('bidang_id')
+                            ->label('Kaitkan dengan Parameter Bidang')
+                            ->hidden(fn ($get) : bool => $get('tipe') == 'masuk' ? true : false)
+                            ->columnSpanFull()
+                            ->searchable()
+                            ->required()
+                            ->live()
+                            ->allowHtml()
+                            ->options(
+                                function () : array {
+                                    $res = [];
+
+                                    $datas = ParameterBidang::where('tipe', 'child')->get();
+
+                                    foreach($datas as $d){
+                                        $res[$d->id] = '<span class="font-bold">'.$d->kode.'</span><div class="text-sm">'. $d->nama .'</div>'; 
+                                    }
+
+                                    return $res;
+                                }
+                            )
+                            ->afterStateUpdated(fn ($state) => $this->bidang_id = $state),
+                        DatePicker::make('tanggal_mulai')
+                            ->hidden(fn ($get) : bool => $get('tipe') == 'masuk' ? true : false)    
+                            ->required(),
+                        DatePicker::make('tanggal_selesai')
+                            ->hidden(fn ($get) : bool => $get('tipe') == 'masuk' ? true : false)    
+                            ->required()
+                            ->live()
+                            ->afterStateUpdated(
+                                function ($get, $state, $set) {
+                                    $m = $get('tanggal_mulai');
+
+                                    if($m){
+                                        $s = $state;
+                                        $diff = dateDiffCarbon($m, $s, 'month');
+
+                                        $set('durasi', $diff);
+                                    }
+                                }
+                            ),
+                        TextInput::make('durasi')
+                            ->live()
+                            ->hidden(fn ($get) : bool => $get('tipe') == 'masuk' ? true : false)    
+                            ->required(),
+                        Textarea::make('keluaran')
+                            ->columnSpanFull()
+                            ->rows(3)
+                            ->hidden(fn ($get) : bool => $get('tipe') == 'masuk' ? true : false)
+                            ->required(),
                         // ini tampil jika tipe = masuk
                         Repeater::make('daftar_submain')
                             ->label('Daftar Sub Utama Untuk Pemasukan / Pendapatan')
                             ->columnSpanFull()
-                            ->hidden(fn ($get) : bool => $get('tipe') == 'masuk' ? false : true)
                             ->collapsible()
-                            ->columns(3)
+                            ->columns(2)
                             ->required()
                             ->live()
                             ->schema([
@@ -385,7 +445,6 @@ class LihatAPBD extends Page
                                     ->searchable()
                                     ->live()
                                     ->allowHtml()
-                                    ->columnSpanFull()
                                     ->options(
                                         function () : array {
                                             $res = [];
@@ -404,85 +463,27 @@ class LihatAPBD extends Page
                                             return $res;
                                         }
                                     ),
-                                TextInput::make('semula')
-                                    ->required()
-                                    ->prefix('Rp.')
-                                    ->mask(RawJs::make('$money($input)'))
-                                    ->stripCharacters(','),
-                                TextInput::make('menjadi')
-                                    ->required()
-                                    ->prefix('Rp.')
-                                    ->mask(RawJs::make('$money($input)'))
-                                    ->stripCharacters(','),
-                                TextInput::make('sumber_dana')
-                                    ->nullable()
-                            ]),
-                        Select::make('parent_bidang_id')
-                            ->required()
-                            ->hidden(fn ($get) : bool => $get('tipe') == 'keluar' ? false : true)
-                            ->searchable()
-                            ->live()
-                            ->allowHtml()
-                            ->columnSpanFull()
-                            ->options(
-                                function () : array {
-                                    $res = [];
-
-                                    $datas = ParameterBidang::query()->where('tipe', 'sub')->get();
-
-                                    foreach ($datas as $d){
-                                        $res[$d->id] = '<span class="font-bold">'.$d->kode.'</span><div class="text-sm">'. $d->nama .'</div>';
-                                    }
-
-                                    return $res;
-                                }
-                            )
-                            ->afterStateUpdated(fn ($state) => $this->parent_bidang_id = $state),
-                        // ini tampil jika tipe = keluar
-                        Repeater::make('daftar_submain')
-                            ->label('Daftar Sub Utama Untuk Belanja / Pengeluaran')
-                            ->columnSpanFull()
-                            ->hidden(fn ($get) : bool => $get('tipe') == 'keluar' ? false : true)
-                            ->collapsible()
-                            ->columns(3)
-                            ->required()
-                            ->live()
-                            ->schema([
-                                Select::make('bidang_id')
-                                    ->required()
+                                Select::make('kegiatan_id')
                                     ->searchable()
                                     ->live()
+                                    ->hidden(fn ($get) : bool => $this->tipe == 'masuk' ? true : false)
                                     ->allowHtml()
-                                    ->columnSpanFull()
                                     ->options(
-                                        function ($get) : array {
+                                        function () : array {
                                             $res = [];
-                                            $parent_bidang_id = $this->parent_bidang_id;
-
-                                            if ($parent_bidang_id) {
-                                                $pk = ParameterBidang::find($parent_bidang_id);
-                                                $datas = ParameterBidang::where('parent_kode', $pk->kode)->get();
+                                            
+                                            if($this->bidang_id){
+                                                $bidang = ParameterBidang::find($this->bidang_id);
+                                                $datas = ParameterKegiatan::query()->where('kode', $bidang->kode)->get();
 
                                                 foreach ($datas as $d){
-                                                    $res[$d->id] = '<span class="font-bold">'.$d->kode.'</span><div class="text-sm">'. $d->nama .'</div>';
+                                                    $res[$d->id] = '<span class="font-bold">'.$d->kode.'</span><div class="text-sm">'. $d->uraian_output .'</div>';
                                                 }
                                             }
 
                                             return $res;
                                         }
-                                    ),
-                                TextInput::make('semula')
-                                    ->required()
-                                    ->prefix('Rp.')
-                                    ->mask(RawJs::make('$money($input)'))
-                                    ->stripCharacters(','),
-                                TextInput::make('menjadi')
-                                    ->required()
-                                    ->prefix('Rp.')
-                                    ->mask(RawJs::make('$money($input)'))
-                                    ->stripCharacters(','),
-                                TextInput::make('sumber_dana')
-                                    ->nullable()
+                                    )
                             ]),
                     ])
             ])
@@ -493,76 +494,77 @@ class LihatAPBD extends Page
 
                         // dd($data);
 
-                        if($data['tipe'] == 'masuk'){
-                            $sm = APBDDetailSubMain::find($data['apbdsm_id']);
+                        $sm = APBDDetailSubMain::find($data['apbdsm_id']);
 
+                        if($data['tipe'] == 'masuk'){
                             $check = APBDRincianUtama::where('apbd_id', $apbd_id)
                                 ->where('apbdm_id', $sm->apbdm_id)
                                 ->where('apbdsm_id', $data['apbdsm_id'])
                                 ->where('kas_id', $sm->parameter_kas_id)
                                 ->where('tipe', $data['tipe'])
                                 ->first();
+                        } else {
+                            $check = APBDRincianUtama::where('apbd_id', $apbd_id)
+                            ->where('apbdm_id', $sm->apbdm_id)
+                            ->where('apbdsm_id', $data['apbdsm_id'])
+                            ->where('kas_id', $sm->parameter_kas_id)
+                            ->where('tipe', $data['tipe'])
+                            ->where('bidang_id', $data['bidang_id'])
+                            ->first();
+                        }
 
-                            if($check){
-                                $detail = $check;
-                            } else {
-                                $detail = APBDRincianUtama::create([
+                        if($check){
+                            $detail = $check;
+                        } else {
+                            $inputs = [];
+                            if($data['tipe'] == 'masuk'){
+                                $inputs = [
                                     'apbd_id' => $apbd_id,
                                     'apbdm_id' => $sm->apbdm_id,
                                     'apbdsm_id' => $data['apbdsm_id'],
                                     'kas_id' => $sm->parameter_kas_id,
                                     'tipe' => $data['tipe'],
-                                ]);
+                                ];
+                            } else {
+                                $inputs = [
+                                    'apbd_id' => $apbd_id,
+                                    'apbdm_id' => $sm->apbdm_id,
+                                    'apbdsm_id' => $data['apbdsm_id'],
+                                    'kas_id' => $sm->parameter_kas_id,
+                                    'tipe' => $data['tipe'],
+                                    'bidang_id' => $data['bidang_id'],
+                                    'tanggal_mulai' => $data['tanggal_mulai'],
+                                    'tanggal_selesai' => $data['tanggal_selesai'],
+                                    'keluaran' => $data['keluaran'],
+                                ];
                             }
 
-                            foreach ($data['daftar_submain'] as $dsu){
-                                APBDRincianSubUtama::create([
+                            $detail = APBDRincianUtama::create($inputs);
+                        }
+
+                        foreach ($data['daftar_submain'] as $dsu){
+                            $input_ds = [];
+
+                            if($data['tipe'] == 'masuk'){
+                                $input_ds = [
                                     'apbd_id' => $apbd_id,
                                     'apbdru_id' => $detail->id,
                                     'apbdsm_id' => $data['apbdsm_id'],
                                     'kas_id' => $dsu['kas_id'],
-                                    'semula' => $dsu['semula'],
-                                    'menjadi' => $dsu['menjadi'],
-                                    'sumber_dana' => $dsu['sumber_dana'],
-                                ]);
-                            }
-                        }
-
-                        if($data['tipe'] == 'keluar'){
-                            $sm = APBDDetailSubMain::find($data['apbdsm_id']);
-
-                            $check = APBDRincianUtama::where('apbd_id', $apbd_id)
-                                ->where('apbdm_id', $sm->apbdm_id)
-                                ->where('apbdsm_id', $data['apbdsm_id'])
-                                ->where('kas_id', $sm->parameter_kas_id)
-                                ->where('tipe', $data['tipe'])
-                                ->first();
-
-                            if($check){
-                                $detail = $check;
-                            } else {
-                                $detail = APBDRincianUtama::create([
-                                    'apbd_id' => $apbd_id,
-                                    'apbdm_id' => $sm->apbdm_id,
-                                    'apbdsm_id' => $data['apbdsm_id'],
-                                    'kas_id' => $sm->parameter_kas_id,
                                     'tipe' => $data['tipe'],
-                                ]);
-                            }
-
-                            foreach ($data['daftar_submain'] as $dsu){
-                                APBDRincianSubUtama::create([
+                                ];
+                            } else {
+                                $input_ds = [
                                     'apbd_id' => $apbd_id,
                                     'apbdru_id' => $detail->id,
                                     'apbdsm_id' => $data['apbdsm_id'],
-
-                                    'parent_bidang_id' => $data['parent_bidang_id'],
-                                    'bidang_id' => $dsu['bidang_id'],
-                                    'semula' => $dsu['semula'],
-                                    'menjadi' => $dsu['menjadi'],
-                                    'sumber_dana' => $dsu['sumber_dana'],
-                                ]);
+                                    'kas_id' => $dsu['kas_id'],
+                                    'tipe' => $data['tipe'],
+                                    'kegiatan_id' => $dsu['kegiatan_id'],
+                                ];
                             }
+
+                            APBDRincianSubUtama::create($input_ds);
                         }
 
                         notif('Notifikasi APBDes', 'Detail Telah Berhasil diinputkan.');
@@ -627,6 +629,268 @@ class LihatAPBD extends Page
                         }
 
                         notif('Notifikasi APBDes', 'Rincian Sub Utama telah berhasil dihapus');
+                    } catch (Exception $e) {
+                        notif();
+                    }
+                }
+            );
+    }
+
+    // Aksi Tambah Sub Child And Child Detail
+    public function tambahRincianDetail() : Action {
+        return Action::make('tambahRincianDetail')
+            ->modalWidth('9xl')
+            ->closeModalByClickingAway(false)
+            ->schema([
+                Grid::make(2)
+                    ->schema([
+                        Select::make('kas_id')
+                            ->searchable()
+                            ->allowHtml()
+                            ->required()
+                            ->label('Kaitkan pada Parameter Kas')
+                            ->options(
+                                function ($livewire) {
+                                    $res = [];
+
+                                    $arguments = $livewire->mountedActions[0]['arguments'];
+                                    $rsu_id = $arguments['rsu_id'];
+
+                                    $rsu = APBDRincianSubUtama::find($rsu_id);
+                                    $datas = ParameterKas::where('parent_kode', $rsu->kas->kode)->get();
+
+                                    foreach($datas as $data){
+                                        $res[$data->id] = '<span class="font-bold">'.$data->kode.'</span><div class="text-sm">'. $data->nama .'</div>'; 
+                                    }
+
+                                    return $res;
+                                }
+                            ),
+                        Select::make('sumber_id')
+                            ->required()
+                            ->searchable()
+                            ->allowHtml()
+                            ->live()
+                            ->options(
+                                function () {
+                                    $res = [];
+
+                                    $datas = ParameterSumberDana::all();
+
+                                    foreach ($datas as $data){
+                                        $res[$data->id] = '<span class="font-bold">'.$data->kode.'</span><div class="text-sm">'. $data->nama .'</div>'; 
+                                    }
+
+                                    return $res;
+                                }
+                            ),
+                        Section::make('Informasi Saldo Pendapatan')
+                            ->columns(2)
+                            ->visible(fn ($get) => $get('sumber_id') ? true : false)
+                            ->schema([
+                                TextEntry::make('saldo_semula')
+                                    ->money('idr')
+                                    ->default(fn ($get) => $get('sumber_id') ? getSisaSumSumber($get('sumber_id'), $this->record->id) : ''),
+                                TextEntry::make('saldo_menjadi')
+                                    ->money('idr')
+                                    ->default(fn ($get) => $get('sumber_id') ? getSisaSumSumber($get('sumber_id'), $this->record->id, 'menjadi_total') : ''),
+                            ]),
+                        Repeater::make('details')
+                            ->collapsible()
+                            ->columnSpanFull()
+                            ->grid(2)
+                            ->schema([
+                                Grid::make('3')
+                                    ->schema([
+                                        TextInput::make('judul')
+                                            ->columnSpan(3)
+                                            ->required(),
+                                        // Detail Semual
+                                        TextInput::make('volume_semula')
+                                            ->placeholder('1 Tahun')
+                                            ->live(debounce:3)
+                                            ->afterStateUpdated(fn ($set, $state) => $set('volume_menjadi', $state))
+                                            ->required(),
+                                        TextInput::make('semula_satuan')
+                                            ->required()
+                                            ->prefix('Rp.')
+                                            ->mask(RawJs::make('$money($input)'))
+                                            ->live()
+                                            ->stripCharacters(',')
+                                            ->afterStateUpdated(
+                                                function ($state, $get, $set) {
+                                                    $volume = explode(' ', $get('volume_semula'))[0];
+                                                    $satuan = $state;
+                                                    $total = $satuan * $volume;
+
+                                                    $set('semula_total', $total);
+                                                    $set('menjadi_satuan', $state);
+                                                }
+                                            ),
+                                        TextInput::make('semula_total')
+                                            ->live()
+                                            ->required()
+                                            ->prefix('Rp.')
+                                            ->mask(RawJs::make('$money($input)'))
+                                            ->stripCharacters(','),
+
+                                        // Detail Menjadi
+                                        TextInput::make('volume_menjadi')
+                                            ->placeholder('1 Tahun')
+                                            ->required(),
+                                        TextInput::make('menjadi_satuan')
+                                            ->required()
+                                            ->prefix('Rp.')
+                                            ->mask(RawJs::make('$money($input)'))
+                                            ->live()
+                                            ->stripCharacters(',')
+                                            ->afterStateUpdated(
+                                                function ($state, $get, $set) {
+                                                    $volume = explode(' ', $get('volume_menjadi'))[0];
+                                                    $satuan = $state;
+                                                    $total = $satuan * $volume;
+
+                                                    $set('menjadi_total', $total);
+                                                }
+                                            ),
+                                        TextInput::make('menjadi_total')
+                                            ->live()
+                                            ->required()
+                                            ->prefix('Rp.')
+                                            ->mask(RawJs::make('$money($input)'))
+                                            ->stripCharacters(','),
+                                    ])
+                            ])->itemLabel(fn (array $state): ?string => $state['judul'] ?? null),
+                    ])
+                
+            ])
+            ->action(
+                function ($arguments, $data) {
+                    try {
+                        $apbd_id = $this->record->id;
+                        $apbdsu_id = $arguments['rsu_id'];
+
+                        $apbdsu = APBDRincianSubUtama::find($apbdsu_id);
+
+                        $check_apbdsc = APBDRicianSubChild::where('apbd_id', $apbd_id)
+                            ->where('apbdsu_id', $apbdsu_id)
+                            ->where('kas_id', $data['kas_id'])
+                            ->first();
+
+                        // simpan ke sub child dulu
+                        if($check_apbdsc){
+                            $apbdsc = $check_apbdsc;
+                        } else {
+                            $apbdsc = APBDRicianSubChild::create([
+                                'apbd_id' => $apbd_id,
+                                'apbdsu_id' => $apbdsu_id,
+                                'kas_id' => $data['kas_id'],
+                            ]);
+                        }
+
+                        // simpan child detail
+                        $apbdsc_id = $apbdsc->id;
+                        $apbdru_id = $apbdsc->apbdsu->apbdru->id; 
+                        $apbdrsu_id = $apbdsc->apbdsu->id; 
+
+                        $saldo_semula = getSisaSumSumber($data['sumber_id'], $apbd_id);
+                        $saldo_menjadi = getSisaSumSumber($data['sumber_id'], $apbd_id, 'menjadi_total');
+                        $current_s = $saldo_semula;
+                        $current_m = $saldo_menjadi;
+
+                        foreach($data['details'] as $d){
+                            $vss = explode(' ', $d['volume_semula']);
+                            $svolume = $vss[0];
+                            $sindikator = $vss[1];
+
+                            $vsm = explode(' ', $d['volume_menjadi']);
+                            $mvolume = $vsm[0];
+                            $mindikator = $vsm[1];
+
+                            if ($d['semula_total'] <= $current_s){
+                                $current_s -= $d['semula_total'];
+
+                                if($d['semula_total'] <= $current_s) {
+                                    $current_m -= $d['menjadi_total'];
+
+                                    APBDRicianChildDetail::create([
+                                        'apbd_id' => $apbd_id,
+                                        'apbdsc_id' => $apbdsc_id,
+                                        'apbdru_id' => $apbdru_id,
+                                        'kas_id' => $data['kas_id'],
+                                        'apbdrsu_id' => $apbdrsu_id,
+
+                                        'judul' => $d['judul'],
+
+                                        'semula_volume' => $svolume,
+                                        'semula_satuan' => $d['semula_satuan'],
+                                        'semula_indikator' => $sindikator,
+                                        'semula_total' => $d['semula_total'],
+
+                                        'menjadi_volume' => $mvolume,
+                                        'menjadi_satuan' => $d['menjadi_satuan'],
+                                        'menjadi_indikator' => $mindikator,
+                                        'menjadi_total' => $d['menjadi_total'],
+
+                                        'sumber_id' => $data['sumber_id'],
+                                        'tipe' => $apbdsu->tipe,
+                                    ]);
+                                } else {
+                                    notif('Notifikasi Rincian', 'Saldo sumber dana menjadi tidak mencukupi.');
+                                    return;
+                                }
+
+                            } else {
+                                notif('Notifikasi Rincian', 'Saldo sumber dana semula tidak mencukupi.');
+                                return;
+                            }
+
+
+                        }
+
+                        notif('Notifikasi Rincian APBD', 'Detail pada rincian APBD telah berhasil dibentuk.');
+
+                    } catch (Exception $e) {
+                        dd($e);
+                        notif();
+                    }
+                }
+            );
+    }
+
+    public function deleteRincianSubChild() : Action {
+        return Action::make('deleteRincianSubChild')
+            ->requiresConfirmation()
+            ->action(
+                function ($arguments) {
+                    try {
+                        $d = APBDRicianSubChild::find($arguments['id']);
+
+                        if($d){
+                            $d->delete();
+                        }
+
+                        notif('Notifikasi APBDes', 'Rincian Sub Child telah berhasil dihapus');
+                    } catch (Exception $e) {
+                        notif();
+                    }
+                }
+            );
+    }
+
+    public function deleteRincianDetail() : Action {
+        return Action::make('deleteRincianDetail')
+            ->requiresConfirmation()
+            ->action(
+                function ($arguments) {
+                    try {
+                        $d = APBDRicianChildDetail::find($arguments['id']);
+
+                        if($d){
+                            $d->delete();
+                        }
+
+                        notif('Notifikasi APBDes', 'Rincian Child Detail telah berhasil dihapus');
                     } catch (Exception $e) {
                         notif();
                     }

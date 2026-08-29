@@ -31,6 +31,18 @@ class APBDDetailSubMain extends Model
     }
 
     public function totalSum($tipe = 'semula') {
-        return APBDRincianSubUtama::where('apbdsm_id', $this->id)->sum($tipe);
+        $total = [
+            'semula' => 0,
+            'menjadi' => 0,
+        ];
+
+        $rus = APBDRincianUtama::where('apbdsm_id', $this->id)->get();
+
+        foreach($rus as $ru){
+            $total['semula'] += $ru->apbdcd->sum('semula_total');
+            $total['menjadi'] += $ru->apbdcd->sum('menjadi_total');
+        }
+
+        return $total[$tipe];
     }
 }

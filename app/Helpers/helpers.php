@@ -5,6 +5,7 @@ use App\Enums\PrioritasTugas;
 use App\Enums\Status;
 use App\Enums\TipeVerif;
 use App\Models\APBDDetailMain;
+use App\Models\APBDRicianChildDetail;
 use App\Models\ParameterBidang;
 use App\Models\RencanaAnggaranBiayaBidang;
 use Filament\Notifications\Notification;
@@ -140,7 +141,7 @@ function dateDiffCarbon(string $date1, string $date2, string $unit = 'day'): str
 
     // Auto pluralize
     $value = ceil($value);
-    $label .= $value > 1 ? 's' : '';
+    $label .= $value > 1 ? '' : '';
 
     return "{$value} {$label}";
 }
@@ -170,4 +171,12 @@ function getBidang($id) {
 
 function getRabBidang($rab_id, $main_id) {
     return RencanaAnggaranBiayaBidang::where('rab_id', $rab_id)->where('main_bidang_id', $main_id)->get();
+}
+
+function getSisaSumSumber(int $sumber_id, $apbd_id, $dana = 'semula_total') {
+    $masuk = APBDRicianChildDetail::where('apbd_id', $apbd_id)->where('tipe', 'masuk')->where('sumber_id', $sumber_id)->sum($dana);
+    $keluar = APBDRicianChildDetail::where('apbd_id', $apbd_id)->where('tipe', 'keluar')->where('sumber_id', $sumber_id)->sum($dana);
+    $hasil = $masuk - $keluar;
+
+    return $hasil;
 }

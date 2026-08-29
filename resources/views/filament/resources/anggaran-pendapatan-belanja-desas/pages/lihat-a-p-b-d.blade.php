@@ -150,8 +150,8 @@
                 @else
                     <div class="empty-state fade-in" id="emptyState">
                         <div class="empty-icon">
-                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-width="1.6">
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.6">
                                 <path d="M9 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-4" />
                                 <path d="M18 2l4 4-10 10H8v-4L18 2z" />
                             </svg>
@@ -184,6 +184,7 @@
 
             @if (count($record->groupOfRincianUtama()) > 0)
                 <!-- Pemasukan -->
+                {{-- Grup Utama --}}
                 @foreach ($record->groupOfRincianUtama() as $r)
                     @php
                         $ru = getAPBDMain($r->apbdm_id);
@@ -203,7 +204,8 @@
                                     </svg>
                                     <span class="toggle-label"></span>
                                 </button>
-                                <button wire:click="mountAction('deleteByGroup', { id: {{ $r->apbdm_id }} })" class="btn btn-delete" data-action="delete">
+                                <button wire:click="mountAction('deleteByGroup', { id: {{ $r->apbdm_id }} })"
+                                    class="btn btn-delete" data-action="delete">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M3 6h18" />
                                         <path
@@ -215,30 +217,106 @@
                         </div>
 
                         <div class="bidang-body">
+
                             <table class="rincian">
                                 <thead>
                                     <tr>
-                                        <th style="width:64px">Kode</th>
-                                        <th>Uraian</th>
-                                        <th class="num">Semula</th>
-                                        <th class="num">Menjadi</th>
-                                        <th class="num">Bertambah/(Berkurang)</th>
-                                        <th>Sumber Dana</th>
-                                        <th class="col-aksi">Aksi</th>
+                                        <th rowspan="2" style="width:64px">Kode</th>
+                                        <th rowspan="2">Uraian</th>
+                                        <th colspan="3" class="num !text-center">Semula</th>
+                                        <th colspan="3" class="num !text-center">Menjadi</th>
+                                        <th rowspan="2" class="num">Bertambah/(Berkurang)</th>
+                                        <th rowspan="2" class="uppercase">Sumber Dana</th>
+                                        <th rowspan="2" class="col-aksi">Aksi</th>
+                                    </tr>
+                                    <tr>
+                                        <th class="uppercase">volume</th>
+                                        <th class="uppercase">harga satuan</th>
+                                        <th class="uppercase">jumlah (Rp)</th>
+                                        <th class="uppercase">volume</th>
+                                        <th class="uppercase">harga satuan</th>
+                                        <th class="uppercase">jumlah (Rp)</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody class="has-kegiatan-info">
                                     @php
                                         $total_semula = 0;
                                         $total_menjadi = 0;
                                     @endphp
 
+                                    {{-- APBD Rincian Utama --}}
                                     @foreach ($ru->apbdru as $ricu)
-                                        <tr>
+                                        @if ($ricu->tipe == 'keluar')
+                                            @php
+                                                $child = $ricu->bidang;
+                                                $sub = $child->getParent();
+                                                $main = $sub->getParent();
+                                            @endphp
+                                            <tr class="kegiatan-info-row">
+                                                <td colspan="11" class="kegiatan-info-cell">
+                                                    <div class="kegiatan-info-toggle"
+                                                        role="button" tabindex="0" aria-expanded="true"
+                                                        aria-label="Buka/tutup rincian kegiatan">
+                                                        <table class="kegiatan-table">
+                                                            <tbody>
+                                                                <tr>
+                                                                    <td class="ki-label">Bidang</td>
+                                                                    <td class="ki-colon">:</td>
+                                                                    <td class="ki-value">
+                                                                        {{ $main->kode . " " . $main->nama }}
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td class="ki-label">Sub Bidang</td>
+                                                                    <td class="ki-colon">:</td>
+                                                                    <td class="ki-value">
+                                                                        {{ $sub->kode . " " . $sub->nama }}
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td class="ki-label">Kegiatan</td>
+                                                                    <td class="ki-colon">:</td>
+                                                                    <td class="ki-value">
+                                                                        {{ $child->kode . " " . $child->nama }}
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td class="ki-label">Waktu Pelaksanaan</td>
+                                                                    <td class="ki-colon">:</td>
+                                                                    <td class="ki-value">{{ dateDiffCarbon($ricu->tanggal_mulai, $ricu->tanggal_selesai, 'month') }}</td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td class="ki-label">Output/Keluaran</td>
+                                                                    <td class="ki-colon">:</td>
+                                                                    <td class="ki-value">
+                                                                        {{ $ricu->keluaran }}
+                                                                    </td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
+                                                        <div class="kegiatan-summary">
+                                                            <span class="ki-label">Kegiatan</span><span
+                                                                class="ki-colon">:</span><span
+                                                                class="ki-value">{{ $child->kode . " " . $child->nama }}</span>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        @endif
+
+                                        <tr id="kegiatan_{{ $ricu->id }}">
                                             <td class="kode">{{ $ricu->kas->kode }}</td>
                                             <td class="uraian indent1">{{ $ricu->kas->nama }}</td>
+
                                             <td class="num"></td>
                                             <td class="num"></td>
+                                            <td class="num font-bold">
+                                                {{ number_format($ricu->apbdcd->sum('semula_total')) }}</td>
+
+                                            <td class="num"></td>
+                                            <td class="num"></td>
+                                            <td class="num font-bold">
+                                                {{ number_format($ricu->apbdcd->sum('menjadi_total')) }}</td>
                                             <td class="num delta-zero"></td>
                                             <td></td>
                                             <td class="aksi">
@@ -256,32 +334,68 @@
                                                 </span>
                                             </td>
                                         </tr>
+
+                                        {{-- APBD Rincian Sub Utama --}}
                                         @foreach ($ricu->apbdrsu as $rsu)
+                                            @php
+                                                $sm = $rsu->apbdcd->sum('semula_total');
+                                                $mj = $rsu->apbdcd->sum('menjadi_total');
+                                                $total_semula += $sm;
+                                                $total_menjadi += $mj;
+                                            @endphp
+
+                                            @if ($rsu->tipe == 'keluar')
+                                                <tr>
+                                                    <td class="kode">
+                                                        {{ $rsu->kegiatan ? $rsu->kegiatan->kode : '-' }}
+                                                    </td>
+                                                    <td class="uraian indent1">
+                                                        {{ $rsu->kegiatan ? $rsu->kegiatan->uraian_output : '-' }}</td>
+
+                                                    <td class="num"></td>
+                                                    <td class="num"></td>
+                                                    <td class="num">{{ number_format($sm) }}</td>
+
+                                                    <td class="num"></td>
+                                                    <td class="num"></td>
+                                                    <td class="num">{{ number_format($mj) }}</td>
+                                                    <td class="num delta-zero">{{ number_format($mj - $sm) }}</td>
+                                                    <td>{{ $rsu->sumber_dana }}</td>
+                                                    <td class="aksi">
+
+                                                    </td>
+                                                </tr>
+                                            @endif
+
                                             <tr>
-                                                @if ($ricu->tipe == 'masuk')
-                                                    <td class="kode">{{ $rsu->kas ? $rsu->kas->kode : '-' }}</td>
-                                                    <td class="uraian indent2">{{ $rsu->kas ? $rsu->kas->nama : '-' }}</td>
-                                                @else
-                                                    <td class="kode">{{ $rsu->bidang ? $rsu->bidang->kode : '-' }}</td>
-                                                    <td class="uraian indent2">{{ $rsu->bidang ? $rsu->bidang->nama : '-' }}</td>
-                                                @endif
+                                                <td class="kode">{{ $rsu->kas ? $rsu->kas->kode : '-' }}</td>
+                                                <td class="uraian indent2">{{ $rsu->kas ? $rsu->kas->nama : '-' }}
+                                                </td>
 
-                                                @php
-                                                    $total_semula += $rsu->semula;
-                                                    $total_menjadi += $rsu->menjadi;
-                                                @endphp
+                                                <td class="num"></td>
+                                                <td class="num"></td>
+                                                <td class="num">{{ number_format($sm) }}</td>
 
-                                                <td class="num">{{ number_format($rsu->semula) }}</td>
-                                                <td class="num">{{ number_format($rsu->menjadi) }}</td>
-                                                <td class="num delta-zero">{{ number_format($rsu->menjadi - $rsu->semula) }}</td>
+                                                <td class="num"></td>
+                                                <td class="num"></td>
+                                                <td class="num">{{ number_format($mj) }}</td>
+                                                <td class="num delta-zero">{{ number_format($mj - $sm) }}</td>
                                                 <td>{{ $rsu->sumber_dana }}</td>
                                                 <td class="aksi">
                                                     <span class="row-aksi">
                                                         <button
+                                                            wire:click="mountAction('tambahRincianDetail', { rsu_id: {{ $rsu->id }} })"
+                                                            class="icon-only icon-add" title="Tambah rincian"><svg
+                                                                viewBox="0 0 24 24" fill="none"
+                                                                stroke="currentColor" stroke-width="2">
+                                                                <path d="M12 5v14M5 12h14" />
+                                                            </svg>
+                                                        </button>
+                                                        <button
                                                             wire:click="mountAction('deleteRincianSubUtama', { id: {{ $rsu->id }} })"
                                                             class="icon-only icon-delete" title="Hapus rincian"><svg
-                                                                viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                                stroke-width="2">
+                                                                viewBox="0 0 24 24" fill="none"
+                                                                stroke="currentColor" stroke-width="2">
                                                                 <path d="M3 6h18" />
                                                                 <path
                                                                     d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6" />
@@ -290,13 +404,100 @@
                                                     </span>
                                                 </td>
                                             </tr>
+
+                                            {{-- APBD Rincian Sub Childern --}}
+                                            @foreach ($rsu->apbdsc as $sc)
+                                                <tr>
+                                                    <td class="kode">{{ $sc->kas ? $sc->kas->kode : '-' }}</td>
+                                                    <td class="uraian indent2">{{ $sc->kas ? $sc->kas->nama : '-' }}
+                                                    </td>
+
+                                                    <td class="num"></td>
+                                                    <td class="num"></td>
+                                                    <td class="num">
+                                                        {{ number_format($sc->apbdcd->sum('semula_total')) }}</td>
+
+                                                    <td class="num"></td>
+                                                    <td class="num"></td>
+                                                    <td class="num">
+                                                        {{ number_format($sc->apbdcd->sum('menjadi_total')) }}</td>
+                                                    <td class="num delta-zero"></td>
+                                                    <td></td>
+                                                    <td class="aksi">
+                                                        <span class="row-aksi">
+                                                            <button
+                                                                wire:click="mountAction('deleteRincianSubChild', { id: {{ $sc->id }} })"
+                                                                class="icon-only icon-delete"
+                                                                title="Hapus rincian"><svg viewBox="0 0 24 24"
+                                                                    fill="none" stroke="currentColor"
+                                                                    stroke-width="2">
+                                                                    <path d="M3 6h18" />
+                                                                    <path
+                                                                        d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6" />
+                                                                </svg>
+                                                            </button>
+                                                        </span>
+                                                    </td>
+                                                </tr>
+
+                                                @php
+                                                    $sc_numbering = 1;
+                                                @endphp
+
+                                                {{-- APBD Rincian Child Detail --}}
+                                                @foreach ($sc->apbdcd as $cd)
+                                                    <tr>
+                                                        <td class="kode"></td>
+                                                        <td class="uraian indent3">{{ $sc_numbering++ }}. &nbsp;
+                                                            {{ $cd->judul }}
+                                                            <span class="sumberdana-tag" style="margin-left:10px;">{{ $cd->sumber->kode }}</span>
+                                                        </td>
+
+                                                        <td class="num">
+                                                            {{ number_format($cd->semula_volume) . ' ' . $cd->semula_indikator }}
+                                                        </td>
+                                                        <td class="num">{{ number_format($cd->semula_satuan) }}
+                                                        </td>
+                                                        <td class="num">{{ number_format($cd->semula_total) }}</td>
+
+                                                        <td class="num">
+                                                            {{ number_format($cd->menjadi_volume) . ' ' . $cd->menjadi_indikator }}
+                                                        </td>
+                                                        <td class="num">{{ number_format($cd->menjadi_satuan) }}
+                                                        </td>
+                                                        <td class="num">{{ number_format($cd->menjadi_total) }}
+                                                        </td>
+                                                        <td class="num delta-zero"></td>
+                                                        <td></td>
+                                                        <td class="aksi">
+                                                            <span class="row-aksi">
+                                                                <button
+                                                                    wire:click="mountAction('deleteRincianDetail', { id: {{ $cd->id }} })"
+                                                                    class="icon-only icon-delete"
+                                                                    title="Hapus rincian"><svg viewBox="0 0 24 24"
+                                                                        fill="none" stroke="currentColor"
+                                                                        stroke-width="2">
+                                                                        <path d="M3 6h18" />
+                                                                        <path
+                                                                            d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6" />
+                                                                    </svg>
+                                                                </button>
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            @endforeach
                                         @endforeach
                                     @endforeach
 
                                     <tr class="total">
-                                        <td></td>
-                                        <td class="label">JUMLAH PENDAPATAN</td>
+                                        <td colspan="2" class="label">JUMLAH PENDAPATAN</td>
+                                        <td class="num">0</td>
+                                        <td class="num">0</td>
                                         <td class="num">{{ number_format($total_semula) }}</td>
+
+                                        <td class="num">0</td>
+                                        <td class="num">0</td>
                                         <td class="num">{{ number_format($total_menjadi) }}</td>
                                         <td class="num">({{ number_format($total_menjadi - $total_semula) }})</td>
                                         <td></td>
@@ -336,25 +537,37 @@
             <div class="fab-menu" id="fabMenu">
                 <button class="fab-item fab-docs" id="fabDocs" type="button">
                     <span class="fab-item-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
+                        </svg>
                     </span>
                     <span class="fab-item-label">Tata Cara / Dokumentasi</span>
                 </button>
-                <button wire:click="mountAction('tambahDetail')" class="fab-item fab-add" id="fabAddRincian" type="button">
+                <button wire:click="mountAction('tambahDetail')" class="fab-item fab-add" id="fabAddRincian"
+                    type="button">
                     <span class="fab-item-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 5v14M5 12h14" />
+                        </svg>
                     </span>
                     <span class="fab-item-label">Tambah Detail</span>
                 </button>
-                <button wire:click="mountAction('tambahRincianUtama')" class="fab-item fab-add" id="fabAddRincian" type="button">
+                <button wire:click="mountAction('tambahRincianUtama')" class="fab-item fab-add" id="fabAddRincian"
+                    type="button">
                     <span class="fab-item-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 5v14M5 12h14" />
+                        </svg>
                     </span>
                     <span class="fab-item-label">Tambah Rincian</span>
                 </button>
             </div>
-            <button class="fab-main" id="fabMain" type="button" aria-expanded="false" aria-label="Buka menu aksi cepat">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            <button class="fab-main" id="fabMain" type="button" aria-expanded="false"
+                aria-label="Buka menu aksi cepat">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M5 12h14" />
+                </svg>
             </button>
         </div>
     </main>
@@ -380,31 +593,45 @@
             fabMain.setAttribute('aria-expanded', String(open));
         }
 
-        fabMain.addEventListener('click', function () {
+        fabMain.addEventListener('click', function() {
             setFabOpen(!fabContainer.classList.contains('is-open'));
         });
 
-        fabBackdrop.addEventListener('click', function () { setFabOpen(false); });
+        fabBackdrop.addEventListener('click', function() {
+            setFabOpen(false);
+        });
 
-        document.addEventListener('keydown', function (e) {
+        document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') setFabOpen(false);
         });
 
         // "Tambah Rincian" dari floating menu — arahkan ke tombol yang sama di section 1
-        fabAddRincian.addEventListener('click', function () {
+        fabAddRincian.addEventListener('click', function() {
             setFabOpen(false);
             var target = document.getElementById('btnAddRincian');
-            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            setTimeout(function () {
+            target.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+            setTimeout(function() {
                 target.style.transform = 'scale(0.97)';
-                setTimeout(function () { target.style.transform = ''; }, 140);
+                setTimeout(function() {
+                    target.style.transform = '';
+                }, 140);
             }, 300);
         });
 
         // "Tata Cara / Dokumentasi" — placeholder, belum ada halaman dokumentasi
-        fabDocs.addEventListener('click', function () {
+        fabDocs.addEventListener('click', function() {
             setFabOpen(false);
             this.style.transform = '';
         });
+
+        // Kegiatan-info row — buka/tutup baris rincian lain di dalam tbody yang sama
+        function toggleKegiatan(kegiatan_id) {
+            const kegiatan_cont = document.getElementById('kegiatan_' + kegiatan_id);
+            
+            kegiatan_cont.classList.toggle('is-collapsed');
+        }
     </script>
 </x-filament-panels::page>
