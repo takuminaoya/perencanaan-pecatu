@@ -30,7 +30,7 @@ class ControlPanelProvider extends PanelProvider
         return $panel
             ->default()
             ->id('control')
-            ->path('control')
+            ->path('')
             ->viteTheme('resources/css/filament/control/theme.css')
             ->login(ModernLogin::class)
             ->maxContentWidth('full')

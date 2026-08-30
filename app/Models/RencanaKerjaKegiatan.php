@@ -15,8 +15,8 @@ class RencanaKerjaKegiatan extends Model
     protected $table = 'ep_rencana_kerja_kegiatans';
     protected $guarded = ["id"];
 
-    public function rab() : BelongsTo {
-        return $this->belongsTo(RencanaAnggaranBiaya::class, 'rab_id');
+    public function apbd() : BelongsTo {
+        return $this->belongsTo(AnggaranPendapatanBelanjaDesa::class, 'apbd_id');
     }
 
     public function bidangs() : HasMany {

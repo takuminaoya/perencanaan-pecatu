@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\RencanaKerjaKegiatans\Schemas;
 
+use App\Models\AnggaranPendapatanBelanjaDesa;
 use App\Models\RencanaAnggaranBiaya;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
@@ -17,7 +18,7 @@ class RencanaKerjaKegiatanForm
             ->components([
                 Hidden::make('uuid')
                     ->default(fn () : string => Str::uuid()),
-                Select::make('rab_id')
+                Select::make('apbd_id')
                     ->required()
                     ->allowHtml()
                     ->searchable()
@@ -25,7 +26,7 @@ class RencanaKerjaKegiatanForm
                         function () : array {
                             $res = [];
 
-                            $rabs = RencanaAnggaranBiaya::all();
+                            $rabs = AnggaranPendapatanBelanjaDesa::all();
 
                             foreach ($rabs as $rab) {
                                 $res[$rab->id] = '<span class="font-bold capitalize">'. $rab->judul . ' Tahun ' . $rab->tahun .'</span><div class="text-sm">'. $rab->jenis .'</div>'; 

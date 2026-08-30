@@ -1,30 +1,31 @@
 <x-filament-panels::page>
     <x-css.rkpcss />
 
+
     <div class="page">
 
         <header class="doc-header">
             <div class="eyebrow">Rencana Kerja Pemerintah Desa</div>
-            <h1 class="capitalize">{{ $record->judul }}<br>Tahun {{ $record->tahun }}</h1>
+            <h1>{{ $record->judul }}<br>Tahun {{ $record->tahun }}</h1>
             <div class="sub">Rincian bidang, jenis kegiatan, lokasi, volume, biaya, sasaran, dan jadwal pelaksanaan
             </div>
 
             <div class="head-meta">
                 <div class="field">
                     <div class="label">Desa</div>
-                    <div class="value">Pemerintah Desa Pecatu</div>
+                    <div class="value capitalize">{{ $record->desa }}</div>
                 </div>
                 <div class="field">
                     <div class="label">Kecamatan</div>
-                    <div class="value">Kecamatan Kuta Selatan</div>
+                    <div class="value capitalize">{{ $record->kecamatan }}</div>
                 </div>
                 <div class="field">
                     <div class="label">Kabupaten / Kota</div>
-                    <div class="value">Kabupaten Badung</div>
+                    <div class="value capitalize">{{ $record->kabupaten }}</div>
                 </div>
                 <div class="field">
                     <div class="label">Provinsi</div>
-                    <div class="value">Provinsi Bali</div>
+                    <div class="value capitalize">{{ $record->provinsi }}</div>
                 </div>
             </div>
         </header>
@@ -78,51 +79,50 @@
                     </thead>
                     <tbody>
                         @php
-                            $rab = $record->rab;
-                            $jumlah_total = 0;
+                            $apbd = $record->apbd;
+                            $grpMains = $apbd->groupOfRincianUtamaBasedOnMainBidang();
 
-                            $goupBidangs = $rab->groupOfMainBidang();
+                            $jumlah_total = 0;
                         @endphp
-                        @foreach ($goupBidangs as $gb)
+
+                        @foreach ($grpMains as $gm)
                             @php
-                                $bid = getBidang($gb->main_bidang_id);
-                                $bidangs = getRabBidang($rab->id, $gb->main_bidang_id);
+                                $mainBidang = getBidang($gm->main_id);
+                                $daftarChildDetails = getAPBDChildDetail($apbd->id, $gm->main_id);
                             @endphp
                             <tr class="grp">
-                                <td class="kd">{{ $bid->kode }}</td>
-                                <td colspan="15">{{ $bid->nama }}</td>
+                                <td class="kd">{{ $mainBidang->kode }}.</td>
+                                <td colspan="15">{{ $mainBidang->nama }}</td>
                             </tr>
 
-                            @foreach ($bidangs as $bidang)
-                                @foreach ($bidang->uraian_details as $urd)
-                                    @php
-                                        $jumlah_total += $urd->jumlah;
-                                    @endphp
-                                    <tr>
-                                        <td class="kd"></td>
-                                        <td colspan="2">
-                                            <div>{{ $bidang->ssub->nama }}</div>
-                                            <div style="color:var(--text-soft); font-style:italic; margin-top:3px;">
-                                                {{ $bidang->skegiatan->nama }}</div>
-                                        </td>
-                                        <td>Desa Pecatu</td>
-                                        <td class="num">{{ $urd->volume }}</td>
-                                        <td class="center">{{ $urd->indikator }}</td>
-                                        <td class="num">{{ number_format($urd->jumlah) }}<span
-                                                class="sumber-dana uppercase">{{ $urd->kode_satuan }}</span></td>
-                                        <td class="sasaran">1</td>
-                                        <td class="sasaran">1</td>
-                                        <td class="sasaran">0</td>
-                                        <td class="sasaran">0</td>
-                                        <td class="center">{{ $bidang->waktu }} {{ $bidang->indikator_waktu }}</td>
-                                        <td class="center">-</td>
-                                        <td class="center">-</td>
-                                        <td>Kepala Seksi Pemerintahan</td>
-                                        <td></td>
-                                    </tr>
-                                @endforeach
+                            @foreach ($daftarChildDetails as $dcd)
+                                @php
+                                    $jumlah_total += $dcd->menjadi_total;
+                                @endphp
+                                <tr>
+                                    <td class="kd"></td>
+                                    <td colspan="2">
+                                        <div>{{ $dcd->sub->nama }}</div>
+                                        <div style="color:var(--text-soft); font-style:italic; margin-top:3px;">{{ $dcd->kegiatan->nama }}</div>
+                                    </td>
+                                    <td>{{ $dcd->lokasi }}</td>
+                                    <td class="num">{{ $dcd->menjadi_volume }}</td>
+                                    <td class="center">{{ $dcd->menjadi_indikator }}</td>
+                                    <td class="num">{{ number_format($dcd->menjadi_total) }}<span class="sumber-dana">{{ $dcd->sumber->kode }}</span></td>
+                                    <td class="sasaran">{{ $dcd->sasaran_male }}</td>
+                                    <td class="sasaran">{{ $dcd->sasaran_female }}</td>
+                                    <td class="sasaran">{{ $dcd->sasaran_artm }}</td>
+                                    <td class="sasaran">{{ ($dcd->sasaran_male + $dcd->sasaran_female + $dcd->sasaran_artm) }}</td>
+                                    <td class="center">{{ dateDiffCarbon($dcd->apbdru->tanggal_mulai, $dcd->apbdru->tanggal_selesai, 'month') }}</td>
+                                    <td class="center">{{ toCarbon($dcd->apbdru->tanggal_mulai, 'Y-m-d', 'm/Y') }}</td>
+                                    <td class="center">{{ toCarbon($dcd->apbdru->tanggal_selesai, 'Y-m-d', 'm/Y') }}</td>
+                                    <td>{{ $dcd->jabatan->nama }}</td>
+                                    <td></td>
+                                </tr>
                             @endforeach
                         @endforeach
+
+                        
                     </tbody>
                     <tfoot>
                         <tr>
@@ -144,8 +144,7 @@
     <div class="fab-container" id="fabContainer">
         <div class="fab-menu" id="fabMenu">
             <span class="fab-menu-label">Menu Cetak</span>
-            <a class="fab-item fab-open" href="{{ route('print.rkk', ['id' => $record->id]) }}" target="_blank"
-                rel="noopener">
+            <a class="fab-item fab-open" href="{{ route('print.rkk', ['id' => $record->id]) }}" target="_blank" rel="noopener">
                 <span class="fab-item-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
@@ -154,7 +153,7 @@
                 </span>
                 Buka Halaman Cetak
             </a>
-            <a href="{{ route('download.rkk', ['id' => $record->id]) }}" download class="fab-item fab-quick" id="btnQuickPrint" type="button">
+            <a class="fab-item fab-quick" id="" href="{{ route('download.rkk', ['id' => $record->id]) }}" download>
                 <span class="fab-item-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M6 9V2h12v7" />
@@ -195,6 +194,13 @@
         });
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') setFabOpen(false);
+        });
+
+        btnQuickPrint.addEventListener('click', function() {
+            setFabOpen(false);
+            setTimeout(function() {
+                window.print();
+            }, 150);
         });
     </script>
 </x-filament-panels::page>

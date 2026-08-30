@@ -10,10 +10,12 @@ use App\Models\APBDRicianChildDetail;
 use App\Models\APBDRicianSubChild;
 use App\Models\APBDRincianSubUtama;
 use App\Models\APBDRincianUtama;
+use App\Models\MasterJabatan;
 use App\Models\ParameterBidang;
 use App\Models\ParameterKas;
 use App\Models\ParameterKegiatan;
 use App\Models\ParameterSumberDana;
+use App\Models\User;
 use Exception;
 use Filament\Actions\Action;
 use Filament\Forms\Components\CheckboxList;
@@ -29,6 +31,7 @@ use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Support\Icons\Heroicon;
 use Filament\Support\RawJs;
+use LDAP\Result;
 use Override;
 
 class LihatAPBD extends Page
@@ -442,6 +445,7 @@ class LihatAPBD extends Page
                             ->schema([
                                 Select::make('kas_id')
                                     ->required()
+                                    ->label('Daftar Kas')
                                     ->searchable()
                                     ->live()
                                     ->allowHtml()
@@ -465,6 +469,7 @@ class LihatAPBD extends Page
                                     ),
                                 Select::make('kegiatan_id')
                                     ->searchable()
+                                    ->label('Daftar Kegiatan')
                                     ->live()
                                     ->hidden(fn ($get) : bool => $this->tipe == 'masuk' ? true : false)
                                     ->allowHtml()
@@ -477,7 +482,7 @@ class LihatAPBD extends Page
                                                 $datas = ParameterKegiatan::query()->where('kode', $bidang->kode)->get();
 
                                                 foreach ($datas as $d){
-                                                    $res[$d->id] = '<span class="font-bold">'.$d->kode.'</span><div class="text-sm">'. $d->uraian_output .'</div>';
+                                                    $res[$d->id] = '<span class="font-bold">'.$d->kode_singkat.'</span><div class="text-sm">'. $d->uraian_output .'</div>';
                                                 }
                                             }
 
@@ -526,16 +531,24 @@ class LihatAPBD extends Page
                                     'tipe' => $data['tipe'],
                                 ];
                             } else {
+                                $para_bidang = ParameterBidang::find($data['bidang_id']);
+
+                                $sub = $para_bidang->getParent();
+                                $main = $sub->getParent();
+                                
                                 $inputs = [
                                     'apbd_id' => $apbd_id,
                                     'apbdm_id' => $sm->apbdm_id,
                                     'apbdsm_id' => $data['apbdsm_id'],
                                     'kas_id' => $sm->parameter_kas_id,
                                     'tipe' => $data['tipe'],
+                                    'main_id' => $main->id,
+                                    'sub_id' => $sub->id,
                                     'bidang_id' => $data['bidang_id'],
                                     'tanggal_mulai' => $data['tanggal_mulai'],
                                     'tanggal_selesai' => $data['tanggal_selesai'],
                                     'keluaran' => $data['keluaran'],
+                                    'dibuat_oleh' => whois()->id,
                                 ];
                             }
 
@@ -639,7 +652,8 @@ class LihatAPBD extends Page
     // Aksi Tambah Sub Child And Child Detail
     public function tambahRincianDetail() : Action {
         return Action::make('tambahRincianDetail')
-            ->modalWidth('9xl')
+            ->modalDescription('Menambahkan informasi secara lebih terperinci mengenai komponen anggaran dalam RAB Desa, meliputi uraian kegiatan, volume, satuan, harga satuan, serta jumlah anggaran yang diperlukan.')
+            ->modalWidth('8xl')
             ->closeModalByClickingAway(false)
             ->schema([
                 Grid::make(2)
@@ -667,6 +681,7 @@ class LihatAPBD extends Page
                                 }
                             ),
                         Select::make('sumber_id')
+                            ->label('Sumber Dana')
                             ->required()
                             ->searchable()
                             ->allowHtml()
@@ -684,18 +699,11 @@ class LihatAPBD extends Page
                                     return $res;
                                 }
                             ),
-                        Section::make('Informasi Saldo Pendapatan')
-                            ->columns(2)
-                            ->visible(fn ($get) => $get('sumber_id') ? true : false)
-                            ->schema([
-                                TextEntry::make('saldo_semula')
-                                    ->money('idr')
-                                    ->default(fn ($get) => $get('sumber_id') ? getSisaSumSumber($get('sumber_id'), $this->record->id) : ''),
-                                TextEntry::make('saldo_menjadi')
-                                    ->money('idr')
-                                    ->default(fn ($get) => $get('sumber_id') ? getSisaSumSumber($get('sumber_id'), $this->record->id, 'menjadi_total') : ''),
-                            ]),
+                        TextInput::make('lokasi')
+                            ->default('Desa Pecatu')
+                            ->required(),
                         Repeater::make('details')
+                            ->label('Daftar Detail dari Rincian')
                             ->collapsible()
                             ->columnSpanFull()
                             ->grid(2)
@@ -759,8 +767,111 @@ class LihatAPBD extends Page
                                             ->prefix('Rp.')
                                             ->mask(RawJs::make('$money($input)'))
                                             ->stripCharacters(','),
+                                        Section::make('Sasaran')
+                                            ->heading('')
+                                            ->columnSpanFull()
+                                            ->columns(3)
+                                            ->schema([
+                                                TextInput::make('sasaran_male')
+                                                    ->numeric()
+                                                    ->default(0)
+                                                    ->label('Laki-Laki'),
+                                                TextInput::make('sasaran_female')
+                                                    ->numeric()
+                                                    ->default(0)
+                                                    ->label('Perempuan'),
+                                                TextInput::make('sasaran_artm')
+                                                    ->numeric()
+                                                    ->default(0)
+                                                    ->label('A-RTM'),
+                                            ]),
+                                        Select::make('pelaksana_id')
+                                            ->label('Pelaksana Kegiatan')
+                                            ->columnSpanFull()
+                                            ->searchable()
+                                            ->allowHtml()
+                                            ->options(MasterJabatan::query()->pluck('nama', 'id'))
                                     ])
                             ])->itemLabel(fn (array $state): ?string => $state['judul'] ?? null),
+                        Section::make('Informasi Saldo Pendapatan')
+                            ->description('informasi yang menampilkan jumlah pendapatan desa yang telah dianggarkan, diterima, dan saldo pendapatan yang masih tersedia dalam pelaksanaan Rencana Anggaran Belanja (RAB) Desa.')
+                            ->columnSpanFull()
+                            ->columns(2)
+                            ->visible(fn ($get) => $get('sumber_id') ? true : false)
+                            ->schema([
+                                TextEntry::make('saldo_semula')
+                                    ->money('idr')
+                                    ->default(fn ($get) => $get('sumber_id') ? getSisaSumSumber($get('sumber_id'), $this->record->id) : ''),
+                                TextEntry::make('saldo_menjadi')
+                                    ->money('idr')
+                                    ->default(fn ($get) => $get('sumber_id') ? getSisaSumSumber($get('sumber_id'), $this->record->id, 'menjadi_total') : ''),
+                                TextEntry::make('total_input_semula')
+                                    ->live()
+                                    ->money('idr')
+                                    ->default(
+                                        function ($get) {
+                                            $ts = 0;
+
+                                            if($get('details')){
+                                                foreach($get('details') as $d ){
+                                                    $rmoveComma = str_replace(',', '', $d['semula_total']);
+                                                    $ts += (int)$rmoveComma;
+                                                }
+                                            }
+
+                                            return $ts;
+                                        }
+                                    ),
+                                TextEntry::make('total_input_menjadi')
+                                    ->live()
+                                    ->money('idr')
+                                    ->default(
+                                        function ($get) {
+                                            $ts = 0;
+
+                                            if($get('details')){
+                                                foreach($get('details') as $d ){
+                                                    $rmoveComma = str_replace(',', '', $d['menjadi_total']);
+                                                    $ts += (int)$rmoveComma;
+                                                }
+                                            }
+
+                                            return $ts;
+                                        }
+                                    ),
+                                TextEntry::make('saldo_semula_setelah_pengurangan_input')
+                                    ->live()
+                                    ->money('idr')
+                                    ->color(
+                                        fn($state) => $state < 0 ? 'danger' : 'success'
+                                    )
+                                    ->default(
+                                        function ($get) {
+                                            if($get('total_input_semula')){
+                                                $ts = $get('saldo_semula');
+                                                $ti = $get('total_input_semula');
+
+                                               return $ts - $ti;
+                                            }
+                                        }
+                                    ),
+                                TextEntry::make('saldo_menjadi_setelah_pengurangan_input')
+                                    ->live()
+                                    ->money('idr')
+                                    ->color(
+                                        fn($state) => $state < 0 ? 'danger' : 'success'
+                                    )
+                                    ->default(
+                                        function ($get) {
+                                            if($get('total_input_menjadi')){
+                                                $ts = $get('saldo_menjadi');
+                                                $ti = $get('total_input_menjadi');
+
+                                               return $ts - $ti;
+                                            }
+                                        }
+                                    )
+                            ]),
                     ])
                 
             ])
@@ -810,8 +921,10 @@ class LihatAPBD extends Page
                             if ($d['semula_total'] <= $current_s){
                                 $current_s -= $d['semula_total'];
 
-                                if($d['semula_total'] <= $current_s) {
+                                if($d['menjadi_total'] <= $current_m) {
                                     $current_m -= $d['menjadi_total'];
+
+                                    $apbdru = $apbdsc->apbdsu->apbdru;
 
                                     APBDRicianChildDetail::create([
                                         'apbd_id' => $apbd_id,
@@ -831,6 +944,16 @@ class LihatAPBD extends Page
                                         'menjadi_satuan' => $d['menjadi_satuan'],
                                         'menjadi_indikator' => $mindikator,
                                         'menjadi_total' => $d['menjadi_total'],
+
+                                        'sasaran_male' => $d['sasaran_male'],
+                                        'sasaran_female' => $d['sasaran_female'],
+                                        'sasaran_artm' => $d['sasaran_artm'],
+
+                                        'pelaksana_id' => $d['pelaksana_id'],
+
+                                        'main_id' => $apbdru->main_id,
+                                        'sub_id' => $apbdru->sub_id,
+                                        'kegiatan_id' => $apbdru->bidang_id,
 
                                         'sumber_id' => $data['sumber_id'],
                                         'tipe' => $apbdsu->tipe,

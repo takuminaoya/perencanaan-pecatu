@@ -8,6 +8,7 @@ use App\Models\APBDDetailMain;
 use App\Models\APBDRicianChildDetail;
 use App\Models\ParameterBidang;
 use App\Models\RencanaAnggaranBiayaBidang;
+use App\Models\User;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Carbon;
@@ -173,6 +174,10 @@ function getRabBidang($rab_id, $main_id) {
     return RencanaAnggaranBiayaBidang::where('rab_id', $rab_id)->where('main_bidang_id', $main_id)->get();
 }
 
+function getAPBDChildDetail($apbd_id, $main_id) {
+    return APBDRicianChildDetail::where('apbd_id', $apbd_id)->where('main_id', $main_id)->where('tipe', 'keluar')->get();
+}
+
 function getSisaSumSumber(int $sumber_id, $apbd_id, $dana = 'semula_total') {
     $masuk = APBDRicianChildDetail::where('apbd_id', $apbd_id)->where('tipe', 'masuk')->where('sumber_id', $sumber_id)->sum($dana);
     $keluar = APBDRicianChildDetail::where('apbd_id', $apbd_id)->where('tipe', 'keluar')->where('sumber_id', $sumber_id)->sum($dana);
@@ -180,3 +185,16 @@ function getSisaSumSumber(int $sumber_id, $apbd_id, $dana = 'semula_total') {
 
     return $hasil;
 }
+
+function isSuperadmin() : bool {
+    $superadmin_id = 1;
+    return whois()->jabatan->id == $superadmin_id ? true : false;
+}
+
+function isFeatureAvailable($dibuat_oleh) : bool {
+    return $dibuat_oleh == whois()->id ? true : false;
+}
+
+function getUser($id) {
+    return User::find($id);
+} 

@@ -113,14 +113,6 @@
                                         <td class="aksi">
                                             <span class="row-aksi">
                                                 <button
-                                                    wire:click="mountAction('tambahSub', { id: {{ $submain->id }} })"
-                                                    class="icon-only icon-add" title="Tambah rincian"><svg
-                                                        viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                        stroke-width="2">
-                                                        <path d="M12 5v14M5 12h14" />
-                                                    </svg>
-                                                </button>
-                                                <button
                                                     wire:click="mountAction('deleteSubMain', { id: {{ $submain->id }} })"
                                                     class="icon-only icon-delete" title="Hapus rincian"><svg
                                                         viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -160,11 +152,11 @@
                         <p>Tambahkan bidang belanja beserta kode rekening, anggaran semula, dan anggaran perubahannya
                             untuk
                             melengkapi laporan.</p>
-                        <button class="btn-add" id="btnAddBidang">
+                        <button wire:click="mountAction('tambahDetail')" class="btn-add" id="btnAddBidang">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M12 5v14M5 12h14" />
                             </svg>
-                            Tambah Bidang Baru
+                            Tambah Ikhtisar PBP
                         </button>
                     </div>
                 @endif
@@ -204,15 +196,19 @@
                                     </svg>
                                     <span class="toggle-label"></span>
                                 </button>
-                                <button wire:click="mountAction('deleteByGroup', { id: {{ $r->apbdm_id }} })"
-                                    class="btn btn-delete" data-action="delete">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M3 6h18" />
-                                        <path
-                                            d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6" />
-                                    </svg>
-                                    Hapus
-                                </button>
+
+                                @if (isSuperadmin())
+                                    <button wire:click="mountAction('deleteByGroup', { id: {{ $r->apbdm_id }} })"
+                                        class="btn btn-delete" data-action="delete">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M3 6h18" />
+                                            <path
+                                                d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6" />
+                                        </svg>
+                                        Hapus
+                                    </button> 
+                                @endif
+                                
                             </div>
                         </div>
 
@@ -252,6 +248,7 @@
                                                 $sub = $child->getParent();
                                                 $main = $sub->getParent();
                                             @endphp
+
                                             <tr class="kegiatan-info-row">
                                                 <td colspan="11" class="kegiatan-info-cell">
                                                     <div class="kegiatan-info-toggle"
@@ -281,6 +278,22 @@
                                                                     </td>
                                                                 </tr>
                                                                 <tr>
+                                                                    <td class="ki-label">Sub Kegiatan</td>
+                                                                    <td class="ki-colon">:</td>
+                                                                    <td class="ki-value">
+                                                                        @php
+                                                                            $sub_kegiatans = [];
+                                                                            
+                                                                            foreach ($ricu->apbdrsu as $su) {
+                                                                                $sub_kegiatans[] = $su->kegiatan->uraian_output;
+                                                                            }
+
+                                                                            $res = implode(', ', $sub_kegiatans);
+                                                                        @endphp
+                                                                        {{ $res }}
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
                                                                     <td class="ki-label">Waktu Pelaksanaan</td>
                                                                     <td class="ki-colon">:</td>
                                                                     <td class="ki-value">{{ dateDiffCarbon($ricu->tanggal_mulai, $ricu->tanggal_selesai, 'month') }}</td>
@@ -290,6 +303,13 @@
                                                                     <td class="ki-colon">:</td>
                                                                     <td class="ki-value">
                                                                         {{ $ricu->keluaran }}
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td class="ki-label">Dibuat Oleh Dan Dapat Dimodifikasi Oleh</td>
+                                                                    <td class="ki-colon">:</td>
+                                                                    <td class="ki-value capitalize">
+                                                                        Administrator & {{ $ricu->dibuatOleh->nama_lengkap }}
                                                                     </td>
                                                                 </tr>
                                                             </tbody>
@@ -320,18 +340,21 @@
                                             <td class="num delta-zero"></td>
                                             <td></td>
                                             <td class="aksi">
-                                                <span class="row-aksi">
-                                                    <button
-                                                        wire:click="mountAction('deleteRincianUtama', { id: {{ $ricu->id }} })"
-                                                        class="icon-only icon-delete" title="Hapus rincian"><svg
-                                                            viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                            stroke-width="2">
-                                                            <path d="M3 6h18" />
-                                                            <path
-                                                                d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6" />
-                                                        </svg>
-                                                    </button>
-                                                </span>
+                                                @if (isSuperadmin() or isFeatureAvailable($ricu->dibuat_oleh))
+                                                    <span class="row-aksi">
+                                                        <button
+                                                            wire:click="mountAction('deleteRincianUtama', { id: {{ $ricu->id }} })"
+                                                            class="icon-only icon-delete" title="Hapus rincian"><svg
+                                                                viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                                stroke-width="2">
+                                                                <path d="M3 6h18" />
+                                                                <path
+                                                                    d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6" />
+                                                            </svg>
+                                                        </button>
+                                                    </span>
+                                                @endif
+                                                
                                             </td>
                                         </tr>
 
@@ -382,26 +405,29 @@
                                                 <td class="num delta-zero">{{ number_format($mj - $sm) }}</td>
                                                 <td>{{ $rsu->sumber_dana }}</td>
                                                 <td class="aksi">
-                                                    <span class="row-aksi">
-                                                        <button
-                                                            wire:click="mountAction('tambahRincianDetail', { rsu_id: {{ $rsu->id }} })"
-                                                            class="icon-only icon-add" title="Tambah rincian"><svg
-                                                                viewBox="0 0 24 24" fill="none"
-                                                                stroke="currentColor" stroke-width="2">
-                                                                <path d="M12 5v14M5 12h14" />
-                                                            </svg>
-                                                        </button>
-                                                        <button
-                                                            wire:click="mountAction('deleteRincianSubUtama', { id: {{ $rsu->id }} })"
-                                                            class="icon-only icon-delete" title="Hapus rincian"><svg
-                                                                viewBox="0 0 24 24" fill="none"
-                                                                stroke="currentColor" stroke-width="2">
-                                                                <path d="M3 6h18" />
-                                                                <path
-                                                                    d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6" />
-                                                            </svg>
-                                                        </button>
-                                                    </span>
+                                                    @if (isSuperadmin() or isFeatureAvailable($ricu->dibuat_oleh))
+                                                        <span class="row-aksi">
+                                                            <button
+                                                                wire:click="mountAction('tambahRincianDetail', { rsu_id: {{ $rsu->id }} })"
+                                                                class="icon-only icon-add" title="Tambah rincian"><svg
+                                                                    viewBox="0 0 24 24" fill="none"
+                                                                    stroke="currentColor" stroke-width="2">
+                                                                    <path d="M12 5v14M5 12h14" />
+                                                                </svg>
+                                                            </button>
+                                                            <button
+                                                                wire:click="mountAction('deleteRincianSubUtama', { id: {{ $rsu->id }} })"
+                                                                class="icon-only icon-delete" title="Hapus rincian"><svg
+                                                                    viewBox="0 0 24 24" fill="none"
+                                                                    stroke="currentColor" stroke-width="2">
+                                                                    <path d="M3 6h18" />
+                                                                    <path
+                                                                        d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6" />
+                                                                </svg>
+                                                            </button>
+                                                        </span>
+                                                    @endif
+                                                    
                                                 </td>
                                             </tr>
 
@@ -424,19 +450,22 @@
                                                     <td class="num delta-zero"></td>
                                                     <td></td>
                                                     <td class="aksi">
-                                                        <span class="row-aksi">
-                                                            <button
-                                                                wire:click="mountAction('deleteRincianSubChild', { id: {{ $sc->id }} })"
-                                                                class="icon-only icon-delete"
-                                                                title="Hapus rincian"><svg viewBox="0 0 24 24"
-                                                                    fill="none" stroke="currentColor"
-                                                                    stroke-width="2">
-                                                                    <path d="M3 6h18" />
-                                                                    <path
-                                                                        d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6" />
-                                                                </svg>
-                                                            </button>
-                                                        </span>
+                                                        @if (isSuperadmin() or isFeatureAvailable($ricu->dibuat_oleh))
+                                                            <span class="row-aksi">
+                                                                <button
+                                                                    wire:click="mountAction('deleteRincianSubChild', { id: {{ $sc->id }} })"
+                                                                    class="icon-only icon-delete"
+                                                                    title="Hapus rincian"><svg viewBox="0 0 24 24"
+                                                                        fill="none" stroke="currentColor"
+                                                                        stroke-width="2">
+                                                                        <path d="M3 6h18" />
+                                                                        <path
+                                                                            d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6" />
+                                                                    </svg>
+                                                                </button>
+                                                            </span>
+                                                        @endif
+                                                        
                                                     </td>
                                                 </tr>
 
@@ -470,19 +499,22 @@
                                                         <td class="num delta-zero"></td>
                                                         <td></td>
                                                         <td class="aksi">
-                                                            <span class="row-aksi">
-                                                                <button
-                                                                    wire:click="mountAction('deleteRincianDetail', { id: {{ $cd->id }} })"
-                                                                    class="icon-only icon-delete"
-                                                                    title="Hapus rincian"><svg viewBox="0 0 24 24"
-                                                                        fill="none" stroke="currentColor"
-                                                                        stroke-width="2">
-                                                                        <path d="M3 6h18" />
-                                                                        <path
-                                                                            d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6" />
-                                                                    </svg>
-                                                                </button>
-                                                            </span>
+                                                            @if (isSuperadmin() or isFeatureAvailable($ricu->dibuat_oleh))
+                                                                <span class="row-aksi">
+                                                                    <button
+                                                                        wire:click="mountAction('deleteRincianDetail', { id: {{ $cd->id }} })"
+                                                                        class="icon-only icon-delete"
+                                                                        title="Hapus rincian"><svg viewBox="0 0 24 24"
+                                                                            fill="none" stroke="currentColor"
+                                                                            stroke-width="2">
+                                                                            <path d="M3 6h18" />
+                                                                            <path
+                                                                                d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6" />
+                                                                        </svg>
+                                                                    </button>
+                                                                </span>
+                                                            @endif
+                                                            
                                                         </td>
                                                     </tr>
                                                 @endforeach

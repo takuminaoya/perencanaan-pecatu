@@ -327,6 +327,7 @@
                 <tr>
                     <th rowspan="3">KD</th>
                     <th colspan="2" rowspan="3">BIDANG/SUB BIDANG/JENIS KEGIATAN</th>
+                    <th rowspan="3">JENIS KEGIATAN</th>
                     <th rowspan="3">LOKASI</th>
                     <th rowspan="3">VOLUME</th>
                     <th rowspan="3">SATUAN</th>
@@ -356,51 +357,50 @@
                     <th>8</th>
                     <th>9</th>
                     <th>10</th>
+                    <th>11</th>
                 </tr>
             </thead>
             <tbody>
                 @php
-                    $rab = $record->rab;
-                    $jumlah_total = 0;
+                    $apbd = $record->apbd;
+                    $grpMains = $apbd->groupOfRincianUtamaBasedOnMainBidang();
 
-                    $goupBidangs = $rab->groupOfMainBidang();
+                    $jumlah_total = 0;
                 @endphp
-                @foreach ($goupBidangs as $gb)
+
+                @foreach ($grpMains as $gm)
                     @php
-                        $bid = getBidang($gb->main_bidang_id);
-                        $bidangs = getRabBidang($rab->id, $gb->main_bidang_id);
+                        $mainBidang = getBidang($gm->main_id);
+                        $daftarChildDetails = getAPBDChildDetail($apbd->id, $gm->main_id);
                     @endphp
                     <tr class="grp">
-                        <td class="center">{{ $bid->kode }}</td>
-                        <td colspan="15">{{ $bid->nama }}</td>
+                        <td class="center">{{ $mainBidang->kode }}</td>
+                        <td colspan="15">{{ $mainBidang->nama }}</td>
                     </tr>
-
-                    @foreach ($bidangs as $bidang)
-                        @foreach ($bidang->uraian_details as $urd)
-                            @php
-                                $jumlah_total += $urd->jumlah;
-                            @endphp
+                    @foreach ($daftarChildDetails as $dcd)
+                        @php
+                            $jumlah_total += $dcd->menjadi_total;
+                        @endphp
                             <tr>
-                                <td></td>
+                                <td class="kd"></td>
                                 <td colspan="2">
-                                    <div class="sub-bidang">{{ $bidang->ssub->nama }}</div>
-                                    <div class="jenis">{{ $bidang->skegiatan->nama }}</div>
+                                    <div>{{ $dcd->sub->nama }}</div>
                                 </td>
-                                <td>Desa Pecatu</td>
-                                <td class="num">{{ $urd->volume }}</td>
-                                <td class="center">{{ $urd->indikator }}</td>
-                                <td class="num">{{ number_format($urd->jumlah) }}<span class="sumber">{{ $urd->kode_satuan }}</span></td>
-                                <td class="center">0</td>
-                                <td class="center">0</td>
-                                <td class="center">0</td>
-                                <td class="center">0</td>
-                                <td class="center">{{ $bidang->waktu }} {{ $bidang->indikator_waktu }}</td>
-                                <td class="center">-</td>
-                                <td class="center">-</td>
-                                <td>Kepala Seksi Pemerintahan</td>
+                                <td><div style="color:var(--text-soft); font-style:italic; margin-top:3px;">{{ $dcd->kegiatan->nama }}</div></td>
+                                <td>{{ $dcd->lokasi }}</td>
+                                <td class="num">{{ $dcd->menjadi_volume }}</td>
+                                <td class="center">{{ $dcd->menjadi_indikator }}</td>
+                                <td class="num">{{ number_format($dcd->menjadi_total) }}<span class="sumber-dana">{{ $dcd->sumber->kode }}</span></td>
+                                <td class="sasaran">{{ $dcd->sasaran_male }}</td>
+                                <td class="sasaran">{{ $dcd->sasaran_female }}</td>
+                                <td class="sasaran">{{ $dcd->sasaran_artm }}</td>
+                                <td class="sasaran">{{ ($dcd->sasaran_male + $dcd->sasaran_female + $dcd->sasaran_artm) }}</td>
+                                <td class="center">{{ dateDiffCarbon($dcd->apbdru->tanggal_mulai, $dcd->apbdru->tanggal_selesai, 'month') }}</td>
+                                <td class="center">{{ toCarbon($dcd->apbdru->tanggal_mulai, 'Y-m-d', 'm/Y') }}</td>
+                                <td class="center">{{ toCarbon($dcd->apbdru->tanggal_selesai, 'Y-m-d', 'm/Y') }}</td>
+                                <td>{{ $dcd->jabatan->nama }}</td>
                                 <td></td>
                             </tr>
-                        @endforeach
                     @endforeach
                 @endforeach
             </tbody>

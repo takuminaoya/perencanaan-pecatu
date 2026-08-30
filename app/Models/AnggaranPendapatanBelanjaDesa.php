@@ -34,6 +34,15 @@ class AnggaranPendapatanBelanjaDesa extends Model
             ->get(); 
     }
 
+    public function groupOfRincianUtamaBasedOnMainBidang() {
+        return DB::table('ep_apbd_rincian_utamas')
+            ->select('main_id')
+            ->where('apbd_id', $this->id)
+            ->where('tipe', 'keluar')
+            ->groupBy('main_id')
+            ->get(); 
+    }
+
     public function rincian_utama() : HasMany {
         return $this->hasMany(APBDRincianUtama::class, 'apbd_id');
     }

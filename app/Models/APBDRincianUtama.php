@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\APBDRincianSubUtama;
 use App\Models\ParameterKas;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -40,6 +41,10 @@ class APBDRincianUtama extends Model
 
     public function bidang() : BelongsTo {
         return $this->belongsTo(ParameterBidang::class, 'bidang_id');
+    }
+
+    public function dibuatOleh() : BelongsTo {
+        return $this->belongsTo(User::class, 'dibuat_oleh');
     }
 
     public function apbd() : BelongsTo {

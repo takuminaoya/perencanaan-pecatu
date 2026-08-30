@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\AnggaranPendapatanBelanjaDesa;
+use App\Models\MasterJabatan;
 use App\Models\ParameterKas;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -24,6 +25,14 @@ class APBDRicianChildDetail extends Model
     protected $table = 'ep_apbd_rincian_child_details';
     protected $guarded = ["id"];
 
+    public function jabatan() : BelongsTo {
+        return $this->belongsTo(MasterJabatan::class, 'pelaksana_id');
+    }
+
+    public function apbdru() : BelongsTo {
+        return $this->belongsTo(APBDRincianUtama::class, 'apbdru_id');
+    }
+
     public function kas() : BelongsTo {
         return $this->belongsTo(ParameterKas::class, 'kas_id');
     }
@@ -34,5 +43,17 @@ class APBDRicianChildDetail extends Model
 
     public function apbd() : BelongsTo {
         return $this->belongsTo(AnggaranPendapatanBelanjaDesa::class, 'apbd_id');
+    }
+
+    public function main() : BelongsTo {
+        return $this->belongsTo(ParameterBidang::class, 'main_id');
+    }
+
+    public function sub() : BelongsTo {
+        return $this->belongsTo(ParameterBidang::class, 'sub_id');
+    }
+
+    public function kegiatan() : BelongsTo {
+        return $this->belongsTo(ParameterBidang::class, 'kegiatan_id');
     }
 }
