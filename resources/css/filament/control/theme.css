@@ -151,3 +151,15 @@ body {
     background-color: var(--dark);
     color: var(--white);
 }
+
+.fi-ta-text {
+    text-transform: capitalize;
+}
+
+.fi-wi-stats-overview-stat {
+    border-radius: 0px !important;
+}
+
+.fi-section {
+    border-radius: 0px !important;
+}

@@ -379,7 +379,7 @@
                     </tr>
                     @foreach ($daftarChildDetails as $dcd)
                         @php
-                            $jumlah_total += $dcd->menjadi_total;
+                            $jumlah_total += $dcd->total;
                         @endphp
                             <tr>
                                 <td class="kd"></td>
@@ -390,7 +390,7 @@
                                 <td>{{ $dcd->lokasi }}</td>
                                 <td class="num">{{ $dcd->menjadi_volume }}</td>
                                 <td class="center">{{ $dcd->menjadi_indikator }}</td>
-                                <td class="num">{{ number_format($dcd->menjadi_total) }}<span class="sumber-dana">{{ $dcd->sumber->kode }}</span></td>
+                                <td class="num">{{ number_format($dcd->total) }}<span class="sumber-dana">{{ $dcd->sumber->kode }}</span></td>
                                 <td class="sasaran">{{ $dcd->sasaran_male }}</td>
                                 <td class="sasaran">{{ $dcd->sasaran_female }}</td>
                                 <td class="sasaran">{{ $dcd->sasaran_artm }}</td>

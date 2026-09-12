@@ -27,6 +27,9 @@ class ParameterSumberDanaResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Manajemen Masterdata';
 
+    protected static ?int $navigationSort = 0;
+
+
     public static function form(Schema $schema): Schema
     {
         return $schema

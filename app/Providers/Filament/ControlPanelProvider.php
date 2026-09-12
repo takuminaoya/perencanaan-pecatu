@@ -64,6 +64,7 @@ class ControlPanelProvider extends PanelProvider
                 AccountWidget::class,
                 FilamentInfoWidget::class,
             ])
+            ->readOnlyRelationManagersOnResourceViewPagesByDefault(false)
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

@@ -1,5 +1,6 @@
 <?php
 
+use App\Enum\TipeKasFlow;
 use App\Enums\CapaianEnum;
 use App\Enums\PrioritasTugas;
 use App\Enums\Status;
@@ -7,6 +8,8 @@ use App\Enums\TipeVerif;
 use App\Models\APBDDetailMain;
 use App\Models\APBDRicianChildDetail;
 use App\Models\ParameterBidang;
+use App\Models\ParameterKas;
+use App\Models\ParameterKegiatan;
 use App\Models\RencanaAnggaranBiayaBidang;
 use App\Models\User;
 use Filament\Notifications\Notification;
@@ -29,6 +32,10 @@ function whois($guard = 'web') {
 
 function status(string $stats) {
     return Status::tryFrom($stats);
+}
+
+function tipeKasFlow(string $stats) {
+    return TipeKasFlow::tryFrom($stats);
 }
 
 function toCarbon(mixed $date, $searchFormat = "Y-m-d", $format = 'D, d F Y') {
@@ -147,10 +154,6 @@ function dateDiffCarbon(string $date1, string $date2, string $unit = 'day'): str
     return "{$value} {$label}";
 }
 
-function getAPBDMain($id) {
-    return APBDDetailMain::find($id);
-}
-
 function getDaftarKodeSatuan() {
     $res = [];
 
@@ -170,22 +173,6 @@ function getBidang($id) {
     return ParameterBidang::find($id);
 }
 
-function getRabBidang($rab_id, $main_id) {
-    return RencanaAnggaranBiayaBidang::where('rab_id', $rab_id)->where('main_bidang_id', $main_id)->get();
-}
-
-function getAPBDChildDetail($apbd_id, $main_id) {
-    return APBDRicianChildDetail::where('apbd_id', $apbd_id)->where('main_id', $main_id)->where('tipe', 'keluar')->get();
-}
-
-function getSisaSumSumber(int $sumber_id, $apbd_id, $dana = 'semula_total') {
-    $masuk = APBDRicianChildDetail::where('apbd_id', $apbd_id)->where('tipe', 'masuk')->where('sumber_id', $sumber_id)->sum($dana);
-    $keluar = APBDRicianChildDetail::where('apbd_id', $apbd_id)->where('tipe', 'keluar')->where('sumber_id', $sumber_id)->sum($dana);
-    $hasil = $masuk - $keluar;
-
-    return $hasil;
-}
-
 function isSuperadmin() : bool {
     $superadmin_id = 1;
     return whois()->jabatan->id == $superadmin_id ? true : false;
@@ -197,4 +184,94 @@ function isFeatureAvailable($dibuat_oleh) : bool {
 
 function getUser($id) {
     return User::find($id);
-} 
+}
+
+/**
+ * Recursively search an array for a given key and return its value.
+ *
+ * @param array  $array     The array to search in
+ * @param string $searchKey The key you're looking for
+ * @return mixed|null       The value if found, or null if not found
+ */
+function searchByKey(array $array, string $searchKey)
+{
+    foreach ($array as $key => $value) {
+        // Found the key at this level
+        if ($key === $searchKey) {
+            return $value;
+        }
+
+        // If value is an array, search inside it recursively
+        if (is_array($value)) {
+            $result = searchByKey($value, $searchKey);
+            if ($result !== null) {
+                return $result;
+            }
+        }
+    }
+
+    return null; // not found
+}
+
+function getFamilyKas($kas_id){
+    $data = ParameterKas::find($kas_id);
+
+    $ssu = $data->getParent();
+    $su = $ssu->getParent();
+    $u = $su->getParent();
+
+    return [
+        1 => [
+            'kode' => $data->kode,
+            'nama' => $data->nama,
+        ],
+        2 => [
+            'kode' => $ssu->kode,
+            'nama' => $ssu->nama,
+        ],
+        3 => [
+            'kode' => $su->kode,
+            'nama' => $su->nama,
+        ],
+        4 => [
+            'kode' => $u->kode,
+            'nama' => $u->nama,
+        ],
+    ];
+}
+
+function getFamilyBidangBySubKegiatan($sub_kegiatan_id){
+    $data = ParameterKegiatan::find($sub_kegiatan_id);
+
+    if($data){
+        $kegiatan = ParameterBidang::where('kode', $data->kode)->first();
+
+        if($kegiatan){
+            $sub_bidang = $kegiatan->getParent();
+            $bidang = $sub_bidang->getParent();
+
+            return [
+                1 => [
+                    'id' => $bidang->id,
+                    'kode' => $bidang->kode,
+                    'nama' => $bidang->nama,
+                ],
+                2 => [
+                    'id' => $sub_bidang->id,
+                    'kode' => $sub_bidang->kode,
+                    'nama' => $sub_bidang->nama,
+                ],
+                3 => [
+                    'id' => $kegiatan->id,
+                    'kode' => $kegiatan->kode,
+                    'nama' => $kegiatan->nama,
+                ],
+                4 => [
+                    'id' => $data->id,
+                    'kode' => $data->kode_singkat,
+                    'nama' => $data->uraian_output,
+                ],
+            ];
+        }
+    }
+}
