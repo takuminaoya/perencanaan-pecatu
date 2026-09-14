@@ -35,6 +35,7 @@ class ControlPanelProvider extends PanelProvider
             ->login(ModernLogin::class)
             ->maxContentWidth('full')
             ->databaseNotifications()
+            ->spa()
             ->favicon(asset('storage/public_assets/icon.png'))
             ->darkMode(false)
             ->databaseTransactions()

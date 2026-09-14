@@ -3,6 +3,8 @@
 namespace App\Filament\Resources\APBDS;
 
 use App\Filament\Resources\APBDS\Pages\CreateAPBD;
+use App\Filament\Resources\APBDS\Pages\CreateAPBDPendapatanMassal;
+use App\Filament\Resources\APBDS\Pages\CreateAPBDPengeluaranMassal;
 use App\Filament\Resources\APBDS\Pages\EditAPBD;
 use App\Filament\Resources\APBDS\Pages\ListAPBDS;
 use App\Filament\Resources\APBDS\Pages\ViewAPBD;
@@ -61,6 +63,8 @@ class APBDResource extends Resource
         return [
             'index' => ListAPBDS::route('/'),
             'create' => CreateAPBD::route('/create'),
+            'create_pmassal' => CreateAPBDPendapatanMassal::route('/create/pendapatan/massal/{record}'),
+            'create_bmassal' => CreateAPBDPengeluaranMassal::route('/create/belanja/massal/{record}'),
             'view' => ViewAPBD::route('/{record}'),
             'edit' => EditAPBD::route('/{record}/edit'),
         ];

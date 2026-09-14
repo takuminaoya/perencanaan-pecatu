@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\APBDS\RelationManagers;
 
+use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -19,6 +20,8 @@ use Filament\Tables\Table;
 class PerubahansRelationManager extends RelationManager
 {
     protected static string $relationship = 'perubahans';
+    protected static ?string $title = 'Perubahan Kas Flow APBD';
+    protected static string|BackedEnum|null $icon = Heroicon::ArrowPathRoundedSquare;
 
     public function form(Schema $schema): Schema
     {

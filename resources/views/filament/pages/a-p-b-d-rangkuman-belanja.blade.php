@@ -27,14 +27,14 @@
                     <h1 class="masthead__title">Rencana Anggaran <em>Biaya (RAB)</em></h1>
                     <div class="masthead__rule"></div>
                     <div class="masthead__meta">
-                        <div><strong>Tahun Anggaran</strong>2025</div>
-                        <div><strong>Jenis Dokumen</strong>Perubahan APBDes</div>
+                        <div><strong>Tahun Anggaran</strong>{{ $apbd->tahun }}</div>
+                        <div><strong>Jenis Dokumen</strong>{{ $apbd->judul }}</div>
                     </div>
                 </div>
                 <div class="masthead__badge">
-                    Dicetak pada
+                    Status
                     <br>
-                    <span class="status">Anggaran Perubahan</span>
+                    <span class="status">{{ $apbd->status }}</span>
                 </div>
             </div>
         </header>
@@ -202,9 +202,9 @@
                                                                 $totalan_pbd[$ap->id] += $jumlah_perubahan;
                                                             @endphp
 
-                                                            <td class="">{{ $volume }}</td>
-                                                            <td class="">{{ number_format($satuan) }}</td>
-                                                            <td class="">{{ number_format($jumlah_perubahan) }}</td>
+                                                            <td style="text-align: right;">{{ $volume }}</td>
+                                                            <td style="text-align: right;">{{ number_format($satuan) }}</td>
+                                                            <td style="text-align: right;">{{ number_format($jumlah_perubahan) }}</td>
                                                             <td style="text-align: right;">{{ number_format($total) }}</td>
                                                         @endforeach
                                                     </tr>
@@ -227,9 +227,9 @@
                                                                         $pdpbopID = $data->getPerubahanBasedOnPerubahanID($ap->id);
                                                                         $pdp = $pdpbopID ? $pdpbopID->detail_paket : null;
                                                                     @endphp
-                                                                    <td class="">{{ $pdp ? $pdp[$key]['detail_volume'] . '  ' . $pdp[$key]['detail_indikator_volume'] : '-' }}</td>
-                                                                    <td class="">{{ $pdp ? number_format($pdp[$key]['detail_satuan']) : '-' }}</td>
-                                                                    <td class="">{{ $pdp ? number_format($pdp[$key]['detail_jumlah']) : '-' }}</td>
+                                                                    <td style="text-align: right;">{{ $pdp ? $pdp[$key]['detail_volume'] . '  ' . $pdp[$key]['detail_indikator_volume'] : '-' }}</td>
+                                                                    <td style="text-align: right;">{{ $pdp ? number_format($pdp[$key]['detail_satuan']) : '-' }}</td>
+                                                                    <td style="text-align: right;">{{ $pdp ? number_format($pdp[$key]['detail_jumlah']) : '-' }}</td>
                                                                     <td style="text-align: right;">
                                                                         {{ $pdp ? number_format($dp['detail_jumlah'] - $pdp[$key]['detail_jumlah']) : '-' }}
                                                                     </td>
@@ -246,7 +246,7 @@
                             <tfoot>
                                 <tr>
                                     <td colspan="4">Jumlah Belanja</td>
-                                    <td class="num" style="text-align:left;">{{ number_format($totalan) }}</td>
+                                    <td class="num" style="text-align:right;">{{ number_format($totalan) }}</td>
                                     @foreach ($apbd_perubahan as $ap)
                                         <td colspan="3" style="text-align: right;">{{ number_format($totalan_pbd[$ap->id]) }}</td>
                                         <td style="text-align: right;">{{ number_format($totalan - $totalan_pbd[$ap->id]) }}</td>

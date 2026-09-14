@@ -6,10 +6,12 @@ use App\Enum\TipeKasFlow;
 use App\Models\APBDPerubahan;
 use App\Models\APBDPerubahanKasFlow;
 use App\Models\MasterJabatan;
+use App\Models\ParameterBidang;
 use App\Models\ParameterKas;
 use App\Models\ParameterKegiatan;
 use App\Models\ParameterStandarSatuanHarga;
 use App\Models\ParameterSumberDana;
+use BackedEnum;
 use Exception;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -36,6 +38,8 @@ use Filament\Schemas\Schema;
 use Filament\Support\Colors\Color;
 use Filament\Support\Icons\Heroicon;
 use Filament\Support\RawJs;
+use Filament\Tables\Columns\ColumnGroup;
+use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -45,6 +49,8 @@ use Illuminate\Support\Facades\DB;
 class KasFlowsRelationManager extends RelationManager
 {
     protected static string $relationship = 'kasFlows';
+    protected static ?string $title = 'Kas Flow APBD';
+    protected static string|BackedEnum|null $icon = Heroicon::DocumentChartBar;
 
     public function form(Schema $schema): Schema
     {
@@ -68,7 +74,14 @@ class KasFlowsRelationManager extends RelationManager
                                 $params = ParameterKas::query()->where('tipe', 'child')->get();
 
                                 foreach ($params as $p) {
-                                    $res[$p->id] = '<span class="font-bold">'.$p->kode.'</span><div class="text-sm">'. $p->nama .'</div>'; 
+                                    $sub = $p->getParent();
+                                    $sbmain = $sub->getParent();
+                                    $main = $sbmain->getParent();
+                                    
+                                    $res[$p->id] = '<div class="text-sm font-extrabold">'.$main->kode.' '. $main->nama .'</div>
+                                    <div class="text-sm font-bold">'.$sbmain->kode.' '. $sbmain->nama .'</div>
+                                    <div class="text-sm font-semibold">'.$sub->kode.' '. $sub->nama .'</div>
+                                    <div class="text-sm font-light">'.$p->kode.' '. $p->nama .'</div>'; 
                                 }
 
                                 return $res;
@@ -178,7 +191,15 @@ class KasFlowsRelationManager extends RelationManager
 
                                 $datas = ParameterKegiatan::all();
                                 foreach($datas as $data){
-                                    $res[$data->id] = '<span class="font-bold">'.$data->kode_singkat.'</span><div class="text-sm">'. $data->uraian_output .'</div>'; 
+                                    // $res[$data->id] = '<span class="font-bold">'.$data->kode_singkat.'</span><div class="text-sm">'. $data->uraian_output .'</div>';
+                                    $bidang_child = ParameterBidang::where('kode', $data->kode)->first();
+                                    $sub = $bidang_child->getParent();
+                                    $main = $sub->getParent();
+
+                                    $res[$data->id] = '<div class="text-sm font-extrabold">'.$main->kode.' '. $main->nama .'</div>
+                                    <div class="text-sm font-bold">'.$sub->kode.' '. $sub->nama .'</div>
+                                    <div class="text-sm font-semibold">'.$bidang_child->kode.' '. $bidang_child->nama .'</div>
+                                    <div class="text-sm font-light">'.$data->kode_singkat.' '. $data->uraian_output .'</div>'; 
                                 }
 
                                 return $res;
@@ -528,7 +549,9 @@ class KasFlowsRelationManager extends RelationManager
                                 $satuan = $state;
                                 $total = $volume * $satuan;
 
-                                $set('jumlah', $total);
+                                if ($get('indikator_volume') != 'Paket'){
+                                    $set('jumlah', $total);
+                                }
                             }
                         )
                         ->required(),
@@ -688,10 +711,11 @@ class KasFlowsRelationManager extends RelationManager
                         }
                     )
                     ->options(
-                        function () {
+                        function ($livewire) {
+                            // dd($livewire);
                             $res = [];
 
-                            $params = APBDPerubahan::all();
+                            $params = $livewire->ownerRecord->perubahans;
 
                             foreach ($params as $p) {
                                 $mulai = toCarbon($p->tanggal_mulai);
@@ -1030,9 +1054,25 @@ class KasFlowsRelationManager extends RelationManager
                 TextColumn::make('judul')
                     ->wrap()
                     ->searchable(),
-                TextColumn::make('jumlah')
-                    ->money('idr')
-                    ->sortable(),
+                ColumnGroup::make('Anggaran', [
+                    TextColumn::make('volumes')
+                        ->label('Volume')
+                        ->default(fn ($record) => $record->volume . ' ' .$record->indikator_volume),
+                    TextColumn::make('satuan')
+                        ->summarize([
+                            Sum::make()
+                                ->money('idr')
+                        ])
+                        ->money('idr'),
+                    TextColumn::make('jumlah')
+                        ->summarize([
+                            Sum::make()
+                                ->money('idr')
+                        ])
+                        ->money('idr')
+                        ->sortable(),
+                ]),
+                
                 TextColumn::make('sumberDana.kode')
                     ->label('Sumber')
                     ->badge()
@@ -1128,7 +1168,9 @@ class KasFlowsRelationManager extends RelationManager
             ])
             ->filters([
                 SelectFilter::make('tipe')
-                    ->options(TipeKasFlow::class)
+                    ->options(TipeKasFlow::class),
+                SelectFilter::make('sumber_id')
+                    ->options(ParameterSumberDana::query()->pluck('kode','id'))
             ])
             ->headerActions([
                 CreateAction::make()
@@ -1137,14 +1179,14 @@ class KasFlowsRelationManager extends RelationManager
                     ->modalHeading('Pembuatan Kas Flow Baru')
                     ->modalDescription('Proses membuat pencatatan arus kas baru, yang mencatat uang masuk dan/atau uang keluar dalam suatu periode.')
                     ->modalIcon(Heroicon::ArrowPathRoundedSquare)
-                    ->label('Pembuatan Kas Flow Baru')
+                    ->label('Kas Flow Baru')
                     ->icon(Heroicon::Plus),
             ])
             ->recordActions([
                 EditAction::make()
                     ->modalWidth('8xl')
                     ->closeModalByClickingAway(false)
-                    ->modalHeading('Pembaharuan Kas Flow Baru')
+                    ->modalHeading('Pembaharuan Kas Flow')
                     ->modalDescription('Proses membuat pencatatan arus kas baru, yang mencatat uang masuk dan/atau uang keluar dalam suatu periode.')
                     ->modalIcon(Heroicon::ArrowPathRoundedSquare),
                 $this->createPerubahanKasFlow()

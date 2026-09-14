@@ -119,6 +119,7 @@ class APBDRangkumanBelanja extends Page
                             ->select('sub_ssutama_id')
                             ->where('apbd_id', $this->apbd_id)
                             ->where('tipe', 'keluar')
+                            ->where('kegiatan_id', $kegiatan->kegiatan_id)
                             ->where('sub_sutama_id', $sub_sutama->sub_sutama_id)
                             ->groupBy('sub_ssutama_id')
                             ->get();
@@ -146,6 +147,7 @@ class APBDRangkumanBelanja extends Page
                             // loop kasflow awal
                             $kasFlows = $this->apbd->kasFlows()
                                 ->where('tipe', 'keluar')
+                                ->where('kegiatan_id', $kegiatan->kegiatan_id)
                                 ->where('sub_ssutama_id', $sub_ssutama->sub_ssutama_id)
                                 ->get();
 
@@ -191,6 +193,7 @@ class APBDRangkumanBelanja extends Page
                         // loop kasflow awal
                         $kasFlows = $this->apbd->kasFlows()
                             ->where('tipe', 'keluar')
+                            ->where('kegiatan_id', $kegiatan->kegiatan_id)
                             ->where('sub_sutama_id', $sub_sutama->sub_sutama_id)
                             ->get();
 
@@ -241,6 +244,7 @@ class APBDRangkumanBelanja extends Page
                     $kasFlows = $this->apbd->kasFlows()
                         ->where('tipe', 'keluar')
                         ->where('sub_utama_id', $sub_utama->sub_utama_id)
+                        ->where('kegiatan_id', $kegiatan->kegiatan_id)
                         ->get();
 
                     foreach($kasFlows as $kf){
