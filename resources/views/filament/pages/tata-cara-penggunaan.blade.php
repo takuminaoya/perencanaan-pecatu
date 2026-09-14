@@ -170,7 +170,7 @@
             /* padding: 44px clamp(20px, 5vw, 56px) 100px; */
             display: grid;
             grid-template-columns: 250px 1fr;
-            /* gap: 44px; */
+            gap: 44px;
             align-items: start;
         }
 
