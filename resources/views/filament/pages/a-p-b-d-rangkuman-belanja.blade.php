@@ -13,6 +13,7 @@
             </select>
         </form>
         <button type="button" wire:click="setAPBD" class="selector-bar__action">Terapkan</button>
+    <a href="{{ route('print.apbd', ['id' => $apbd->id, 'mode' => 'rangkuman_belanja']) }}" target="_BLANK" class="selector-bar__action">Print</a>
     </div>
 
     @if ($apbd)
@@ -43,13 +44,6 @@
         <main class="page">
             <section class="panel">
 
-            <!--================================================================
-            RAB-LOOP-START
-            Setiap ".rab-item" merepresentasikan SATU Kegiatan/Sub Kegiatan.
-            Blok ini (info-list + caption + table + tfoot) dirancang agar
-            bisa digandakan/di-loop untuk menampilkan beberapa Sub Kegiatan
-            dalam satu halaman RAB yang sama.
-            ================================================================-->
             @foreach ($results as $res)
                 <article class="rab-item">
 
@@ -259,10 +253,10 @@
                 </article>
             @endforeach
 
-                <!-- ---- Footnote ---- -->
-                <div class="footnote">
-                    <span>Terakhir diupdate oleh sistem APBDes Pecatu pada {{ toCarbon($apbd->updated_at, 'Y-m-d H:i:s', 'D, d F Y H:i A') }}.</span>
-                </div>
+            <!-- ---- Footnote ---- -->
+            <div class="footnote">
+                <span>Terakhir diupdate oleh sistem APBDes Pecatu pada {{ toCarbon($apbd->updated_at, 'Y-m-d H:i:s', 'D, d F Y H:i A') }}.</span>
+            </div>
 
             </section>
         </main>

@@ -748,7 +748,7 @@
         font-variant-numeric: tabular-nums;
     }
 
-        table.ledger tfoot td {
+    table.ledger tfoot td {
         padding: 14px 16px;
         border-top: 2px solid var(--pecatu-navy);
         font-family: var(--font-display);
@@ -789,6 +789,85 @@
             margin-right: calc(50% - 50vw);
             padding: 0 20px 4px;
             box-sizing: border-box;
+        }
+    }
+
+    /* =====================================================================
+   TAMBAHAN — Halaman Rekapitulasi Rincian Anggaran Belanja Desa
+   Tabel lebar (11 kolom) dengan kelompok header "Rincian Penjabaran
+   APBDesa Perubahan Pertama" (Belanja Pegawai / Barang & Jasa / Modal /
+   Belanja Tak Terduga). Menggunakan pola yang sama dengan .ledger--rab
+   (border-separate + colgroup) supaya header 2 baris tidak meleset,
+   dan .table-wrap--full supaya tabel lebar ini tampil penuh layar
+   serta tetap scrollable pada layar sempit.
+   ===================================================================== */
+
+    table.ledger--rekap {
+        border-collapse: separate;
+        border-spacing: 0;
+        table-layout: fixed;
+        min-width: 1500px;
+        font-size: 13.5px;
+    }
+
+    table.ledger--rekap th,
+    table.ledger--rekap td {
+        border-left: none;
+        border-right: none;
+    }
+
+    table.ledger--rekap thead th {
+        text-align: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+    }
+
+    table.ledger--rekap thead tr:first-child th {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.28);
+    }
+
+    table.ledger--rekap thead th.uraian-col {
+        text-align: left;
+    }
+
+    table.ledger--rekap tbody td.output,
+    table.ledger--rekap tbody td.sumber-dana {
+        text-align: center;
+        color: var(--text-soft);
+        font-size: 13px;
+    }
+
+    table.ledger--rekap tbody td.num {
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* BPD grouping band — mirrors the yellow banding used in the source
+   sheet for the "Tunjangan/Operasional BPD" cluster, re-expressed in
+   the site's gold accent instead of a literal yellow fill */
+    tr.row-band-gold.lvl-2 td,
+    tr.row-band-gold.lvl-2 td.uraian-cell {
+        background: rgba(201, 162, 90, 0.14);
+    }
+
+    tr.row-band-gold.lvl-3 td {
+        background: rgba(201, 162, 90, 0.06);
+    }
+
+    /* Flagged figures — mirrors the red highlight in the source sheet,
+   used there to flag a specific line item for review */
+    td.cell-flag {
+        background: rgba(220, 38, 38, 0.12);
+        color: var(--danger);
+        font-weight: 700;
+    }
+
+    span.text-flag {
+        color: var(--danger);
+        font-style: italic;
+    }
+
+    @media (max-width: 780px) {
+        table.ledger--rekap {
+            font-size: 12.5px;
         }
     }
 </style>

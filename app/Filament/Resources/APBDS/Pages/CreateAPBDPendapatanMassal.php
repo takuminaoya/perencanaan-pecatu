@@ -291,6 +291,8 @@ class CreateAPBDPendapatanMassal extends Page
 
                 APBDKasFlow::insert($inputs);
 
+                $this->form->fill();
+
                 notif('Notifikasi Sistem', 'Pendapatan Masal telah disimpan.', Heroicon::CheckBadge);
             }
         } catch (Exception $e) {

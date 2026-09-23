@@ -275,3 +275,7 @@ function getFamilyBidangBySubKegiatan($sub_kegiatan_id){
         }
     }
 }
+
+function padNumber($number, $length = 2) {
+    return str_pad((string) $number, $length, '0', STR_PAD_LEFT);
+}

@@ -6,56 +6,42 @@ use App\Filament\Resources\APBDS\APBDResource;
 use App\Models\APBDKasFlow;
 use App\Models\MasterJabatan;
 use App\Models\ParameterBidang;
+use App\Models\ParameterGroupBidang;
 use App\Models\ParameterKas;
 use App\Models\ParameterKegiatan;
 use App\Models\ParameterStandarSatuanHarga;
 use App\Models\ParameterSumberDana;
+use Carbon\Carbon;
 use Exception;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Repeater\TableColumn;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Pages\Concerns\InteractsWithRecord;
 use Filament\Resources\Pages\Page;
 use Filament\Schemas\Components\FusedGroup;
-use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Group;
-use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Support\RawJs;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
-class CreateAPBDPengeluaranMassal extends Page
+class CreateAPBDPengeluaranMassalPerBidang extends Page
 {
     use InteractsWithRecord;
 
     protected static string $resource = APBDResource::class;
 
-    protected string $view = 'filament.resources.a-p-b-d-s.pages.create-a-p-b-d-pengeluaran-massal';
+    protected string $view = 'filament.resources.a-p-b-d-s.pages.create-a-p-b-d-pengeluaran-massal-per-bidang';
 
-    // Utama
-    public mixed $sub_ssutama_id;
-    public mixed $tipe = 'keluar';
-    public mixed $utama_id;
-    public mixed $sub_utama_id;
-    public mixed $sub_sutama_id;
-    public mixed $sumber_id;
+    public mixed $sub_kegiatan_id, $bidang_id, $sub_bidang_id, $kegiatan_id, $group_id, $sub_kegiatan_nama;
+    public mixed $tanggal_mulai, $tanggal_selesai, $sumber_id, $pelaksana_id, $keluaran; 
 
-    public mixed $tanggal_mulai;
-    public mixed $tanggal_selesai;
-    public mixed $pelaksana_id;
-    public mixed $keluaran;
+    public array $contents;
 
-
-    // repeatable
-    public mixed $contents = [];
- 
     public function mount(int|string $record): void
     {
         $this->record = $this->resolveRecord($record);
@@ -64,186 +50,193 @@ class CreateAPBDPengeluaranMassal extends Page
     public function form(Schema $schema) : Schema {
         return $schema
             ->components([
-                Group::make([
-                    Select::make('sub_ssutama_id')
-                        ->label('Kaitkan dengan Parameter Kas')
-                        ->columnSpanFull()
-                        ->searchable()
-                        ->required()
-                        ->allowHtml()
-                        ->options(
-                            function () {
-                                $res = [];
-                                
-                                $params = ParameterKas::query()->where('tipe', 'child')->get();
+                Select::make('kegiatan_id')
+                    ->required()
+                    ->label('Kaitkan Pengeluaran dengan Sub Kegiatan yang ada.')
+                    ->belowContent('Pilihan ini bersifat optional. namun ini harus diisi jika belanja/pengeluaran bukan berjenis pembiayaan')
+                    ->searchable()
+                    ->allowHtml()
+                    ->live(onBlur:true)
+                    ->options(
+                        function () {
+                            $res = [];
 
-                                foreach ($params as $p) {
-                                    $sub = $p->getParent();
-                                    $sbmain = $sub->getParent();
-                                    $main = $sbmain->getParent();
-                                    
-                                    $res[$p->id] = '<div class="text-sm font-extrabold">'.$main->kode.' '. $main->nama .'</div>
-                                    <div class="text-sm font-bold">'.$sbmain->kode.' '. $sbmain->nama .'</div>
-                                    <div class="text-sm font-semibold">'.$sub->kode.' '. $sub->nama .'</div>
-                                    <div class="text-sm font-light">'.$p->kode.' '. $p->nama .'</div>'; 
-                                }
+                            $datas = ParameterBidang::where('tipe', 'child')->get();
+                            foreach($datas as $data){
+                                // $res[$data->id] = '<span class="font-bold">'.$data->kode_singkat.'</span><div class="text-sm">'. $data->uraian_output .'</div>';
+                                $sub = $data->getParent();
+                                $main = $sub->getParent();
 
-                                return $res;
+                                $res[$data->id] = '<div class="text-sm font-extrabold">'.$main->kode.' '. $main->nama .'</div>
+                                <div class="text-sm font-bold">'.$sub->kode.' '. $sub->nama .'</div>
+                                <div class="text-sm font-light">'.$data->kode.' '. $data->nama .'</div>'; 
                             }
-                        )
-                        ->live()
-                        ->afterStateUpdated(
-                            function ($state, $set) {                                
-                                $data = ParameterKas::find($state);
 
-                                $ssu = $data->getParent();
-                                $su = $ssu->getParent();
-                                $u = $su->getParent();
+                            return $res;
+                        }
+                    )
+                    ->afterStateUpdated(
+                        function ($state, $set) {
+                            $data = ParameterBidang::find($state);
 
-                                $set('utama_id', $u->id);
-                                $set('sub_utama_id', $su->id);
-                                $set('sub_sutama_id', $ssu->id);
-                                $set('judul', $data->nama);
+                            $sub = $data->getParent();
+                            $bidang = $sub->getParent();
+
+                            $set('sub_bidang_id', $sub->id);
+                            $set('bidang_id', $bidang->id);
+                        }
+                    ),
+
+                Select::make('group_id')
+                    ->required()
+                    ->label('Sub Dari Kegiatan')
+                    ->belowContent('Pilihan ini tidak bersifat optional. Detail ini dapat ditemukan pada dokumen penginputan bidang di bagian sub kegiatan. jika tidak ada silahkan tambahkan dengan menggunakan tombol +')
+                    ->searchable()
+                    ->createOptionForm([
+                        TextInput::make('nama')
+                            ->required()
+                    ])
+                    ->createOptionUsing(
+                        function ($data) {
+                            $check = ParameterGroupBidang::where('nama', 'like', '%'.$data['nama'].'%')->first();
+                            if(!$check){
+                                $res = ParameterGroupBidang::create($data);
+                                return $res->id;
+                            }
+                        }
+                    )
+                    ->options(ParameterGroupBidang::query()->pluck('nama', 'id')),
+
+                Hidden::make('sub_kegiatan_nama'),
+                Hidden::make('bidang_id'),
+                Hidden::make('sub_bidang_id'),
+                
+                // keliatan jika kegiatan diatas ada
+                Group::make([
+                    FusedGroup::make([
+                        DatePicker::make('tanggal_mulai')
+                            ->placeholder('Tanggal Mulai'),
+                        DatePicker::make('tanggal_selesai')
+                            ->placeholder('Tanggal Selesai'),
+                    ])
+                    ->columns(2)
+                    ->label('Durasi'),
+
+                    Select::make('pelaksana_id')
+                        ->label('Tim / Pelaksana')
+                        ->searchable()
+                        ->options(MasterJabatan::query()->pluck('nama', 'id')),
+
+                    TextEntry::make('duration')
+                        ->live(onBlur:true)
+                        ->badge()
+                        ->icon(Heroicon::CalendarDateRange)
+                        ->default(
+                            function ($get) {
+                                $m = $get('tanggal_mulai');
+                                $s = $get('tanggal_selesai');
+
+                                if($m and $s){
+                                    return dateDiffCarbon($m, $s, 'month');
+                                }
                             }
                         ),
-                    Hidden::make('tipe')
-                        ->default('masuk'),
-                    Hidden::make('utama_id')
-                        ->live()
-                        ->nullable(),
-                    Hidden::make('sub_utama_id')
-                        ->live()
-                        ->nullable(),
-                    Hidden::make('sub_sutama_id')
-                        ->live()
+                    
+                    TextInput::make('keluaran')
+                        ->placeholder('Output/Keluaran')
+                        ->columnSpanFull()
                         ->nullable(),
                 ])
-                ->columnSpanFull()
-                ->columns(2),
+                ->live(onBlur:true)
+                ->visible(fn ($get) => $get('kegiatan_id') ? true : false)
+                ->columns(3),
 
-                // Repeatable inputs
                 Repeater::make('contents')
-                    ->label('Daftar Detail dari pendapatan')
-                    ->belowLabel('Isian dari detail pendapatan massal yang akan dibuat, minimal adalah satu untuk menambahkan silahkan tekan tombol tamahkan.')
+                    ->label('Daftar Detail dari pengeluaran')
+                    ->belowLabel('Isian dari detail pengeluaran massal yang akan dibuat, minimal adalah satu untuk menambahkan silahkan tekan tombol tamahkan.')
                     ->columnSpanFull()
                     ->grid(1)
-                    ->live(onBlur:true)
                     ->minItems(1)
                     ->defaultItems(1)
+                    ->columns(2)
                     ->collapsible()
                     ->cloneable()
                     ->itemLabel(fn (array $state): ?string => $state['judul'] ?? null)
+                    ->visible(fn ($get) => $get('kegiatan_id') ? true : false)
                     ->schema([
-                        /**
-                         * Bagian pengeluaran
-                         * dimana ini muncul hanya pada saat tipe RAB adalah pengeluaran atau belanja
-                         */
-                        Group::make([
-                            Select::make('sub_kegiatan_id')
-                                ->label('Kaitkan Pengeluaran dengan Sub Kegiatan yang ada.')
-                                ->belowContent('Pilihan ini bersifat optional. namun ini harus diisi jika belanja/pengeluaran bukan berjenis pembiayaan')
-                                ->searchable()
-                                ->allowHtml()
-                                ->live()
-                                ->options(
-                                    function () {
-                                        $res = [];
+                        Select::make('sub_ssutama_id')
+                            ->label('Kaitkan dengan Parameter Kas')
+                            ->searchable()
+                            ->required()
+                            ->allowHtml()
+                            ->options(
+                                function () {
+                                    $res = [];
+                                    
+                                    $params = ParameterKas::query()->where('tipe', 'child')->get();
 
-                                        $datas = ParameterKegiatan::all();
-                                        foreach($datas as $data){
-                                            // $res[$data->id] = '<span class="font-bold">'.$data->kode_singkat.'</span><div class="text-sm">'. $data->uraian_output .'</div>';
-                                            $bidang_child = ParameterBidang::where('kode', $data->kode)->first();
-                                            $sub = $bidang_child->getParent();
-                                            $main = $sub->getParent();
-
-                                            $res[$data->id] = '<div class="text-sm font-extrabold">'.$main->kode.' '. $main->nama .'</div>
-                                            <div class="text-sm font-bold">'.$sub->kode.' '. $sub->nama .'</div>
-                                            <div class="text-sm font-semibold">'.$bidang_child->kode.' '. $bidang_child->nama .'</div>
-                                            <div class="text-sm font-light">'.$data->kode_singkat.' '. $data->uraian_output .'</div>'; 
-                                        }
-
-                                        return $res;
+                                    foreach ($params as $p) {
+                                        $sub = $p->getParent();
+                                        $sbmain = $sub->getParent();
+                                        $main = $sbmain->getParent();
+                                        
+                                        $res[$p->id] = '<div class="text-sm font-extrabold">'.$main->kode.' '. $main->nama .'</div>
+                                        <div class="text-sm font-bold">'.$sbmain->kode.' '. $sbmain->nama .'</div>
+                                        <div class="text-sm font-semibold">'.$sub->kode.' '. $sub->nama .'</div>
+                                        <div class="text-sm font-light">'.$p->kode.' '. $p->nama .'</div>'; 
                                     }
-                                )
-                                ->afterStateUpdated(
-                                    function ($state, $set) {
-                                        $data = getFamilyBidangBySubKegiatan($state);
 
-                                        $set('bidang_id', $data[1]['id']);
-                                        $set('sub_bidang_id', $data[2]['id']);
-                                        $set('kegiatan_id', $data[3]['id']);
+                                    return $res;
+                                }
+                            )
+                            ->afterStateUpdated(
+                                function ($state, $set) {                                
+                                    $data = ParameterKas::find($state);
+
+                                    $ssu = $data->getParent();
+                                    $su = $ssu->getParent();
+                                    $u = $su->getParent();
+
+                                    $set('utama_id', $u->id);
+                                    $set('sub_utama_id', $su->id);
+                                    $set('sub_sutama_id', $ssu->id);
+                                    $set('judul', $data->nama);
+                                }
+                            ),
+                        Select::make('sub_kegiatan_id')
+                            ->label('Kaitkan Pengeluaran dengan Sub Kegiatan yang ada.')
+                            ->searchable()
+                            ->allowHtml()
+                            ->options(
+                                function ($get, $livewire) {
+                                    $res = [];
+
+                                    $kegiatan_id = $livewire->kegiatan_id;
+                                    $kegiatan = ParameterBidang::find($kegiatan_id);
+
+                                    $datas = ParameterKegiatan::where('kode', $kegiatan->kode)->get();
+                                    foreach($datas as $data){
+                                        // $res[$data->id] = '<span class="font-bold">'.$data->kode_singkat.'</span><div class="text-sm">'. $data->uraian_output .'</div>';
+                                        $bidang_child = ParameterBidang::where('kode', $data->kode)->first();
+
+                                        $res[$data->id] = '<div class="text-sm font-semibold">'.$bidang_child->kode.' '. $bidang_child->nama .'</div>
+                                        <div class="text-sm font-light">'.$data->kode_singkat.' '. $data->uraian_output .'</div>'; 
                                     }
-                                ),
 
-                            Select::make('template_ssh')
-                                ->label('Daftar Standar Satuan Harga')
-                                ->belowContent('Kosongkan jika tidak menggunakan template, ini hanya digunakan untuk automisasi pengisian data dibawah.')
-                                ->columnSpanFull()
-                                ->searchable()
-                                ->allowHtml()
-                                ->options(
-                                        function () {
-                                            $res = [];
-
-                                            $datas = ParameterStandarSatuanHarga::limit(100)->get();
-
-                                            foreach ($datas as $data){
-                                                $res[$data->id] = '<span class="font-bold">'.$data->uraian_barang.'</span><div class="text-sm">'. $data->spesifikasi .'</div><div class="text-xs">Rp. '. number_format($data->harga_satuan) .' Per '. $data->satuan .'</div>'; 
-                                            }
-
-                                            return $res;
-                                        }
-                                    )
-                                    ->getSearchResultsUsing(
-                                        function (string $search) : array {
-                                            $res = [];
-
-                                            $datas = ParameterStandarSatuanHarga::where('uraian_barang', 'like', "%{$search}%")->limit(100)->get();
-
-                                            foreach ($datas as $data){
-                                                $res[$data->id] = '<span class="font-bold">'.$data->uraian_barang.'</span><div class="text-sm">'. $data->spesifikasi .'</div><div class="text-xs">Rp. '. number_format($data->harga_satuan) .' Per '. $data->satuan .'</div>'; 
-                                            }
-
-                                            return $res;
-                                        })
-                                    ->getOptionLabelUsing(fn ($value): ?string => ParameterStandarSatuanHarga::find($value)?->uraian_barang)
-                                    ->live()
-                                    ->afterStateUpdated(
-                                        function ($state, $set) {
-                                            $d = ParameterStandarSatuanHarga::find($state);
-
-                                            if($d){
-                                                // dd($d);
-                                                
-                                                $set('judul', $d->spesifikasi);
-                                                $set('volume', 1);
-                                                $set('indikator_volume', $d->satuan);
-                                                $set('satuan', $d->harga_satuan);
-                                                $set('jumlah', $d->harga_satuan);
-                                            }
-                                        }
-                                    ),
-                            
-                            Hidden::make('bidang_id')
-                                ->live()
-                                ->default(fn($get) => $get('sub_kegiatan_id') ? getFamilyBidangBySubKegiatan($get('sub_kegiatan_id'))[1]['id'] : ''),
-                            Hidden::make('sub_bidang_id')
-                                ->live()
-                                ->default(fn($get) => $get('sub_kegiatan_id') ? getFamilyBidangBySubKegiatan($get('sub_kegiatan_id'))[2]['id'] : ''),
-                            Hidden::make('kegiatan_id')
-                                ->live()
-                                ->default(fn($get) => $get('sub_kegiatan_id') ? getFamilyBidangBySubKegiatan($get('sub_kegiatan_id'))[3]['id'] : ''),
-
-                        ])
-                        ->live()
-                        ->columnSpanFull()
-                        ->columns(2),
-                        /**
-                         * Bagian pengeluaran dan pendapatan
-                         * dimana ini muncul hanya pada saat tipe RAB adalah belanja maupun keluar
-                         */
+                                    return $res;
+                                }
+                            ),
+                        Hidden::make('tipe')
+                            ->default('masuk'),
+                        Hidden::make('utama_id')
+                            ->nullable(),
+                        Hidden::make('sub_utama_id')
+                            ->nullable(),
+                        Hidden::make('sub_sutama_id')
+                            ->nullable(),
                         Group::make([
                             TextInput::make('judul')
+                                ->columnSpanFull()
                                 ->required(),
                             FusedGroup::make([
                                 TextInput::make('volume')
@@ -331,7 +324,6 @@ class CreateAPBDPengeluaranMassal extends Page
                                                     return $res;
                                                 })
                                             ->getOptionLabelUsing(fn ($value): ?string => ParameterStandarSatuanHarga::find($value)?->uraian_barang)
-                                            ->live()
                                             ->afterStateUpdated(
                                                 function ($state, $set) {
                                                     $d = ParameterStandarSatuanHarga::find($state);
@@ -354,7 +346,7 @@ class CreateAPBDPengeluaranMassal extends Page
                                                 ->placeholder('Jumlah barang/jasa')
                                                 ->numeric()
                                                 ->default(1)
-                                                ->live()
+                                                ->required()
                                                 ->afterStateUpdated(
                                                     function($state, $set, $get) {
                                                         $volume = $state;
@@ -363,8 +355,7 @@ class CreateAPBDPengeluaranMassal extends Page
 
                                                         $set('detail_jumlah', $total);
                                                     }
-                                                )
-                                                ->required(),
+                                                ),
                                             Select::make('detail_indikator_volume')
                                                 ->searchable()
                                                 ->options(
@@ -394,7 +385,7 @@ class CreateAPBDPengeluaranMassal extends Page
                                             ->mask(RawJs::make('$money($input)'))
                                             ->stripCharacters(',')
                                             ->default(0)
-                                            ->live()
+                                            ->required()
                                             ->afterStateUpdated(
                                                 function($state, $set, $get) {
                                                     $volume = $get('detail_volume');
@@ -403,15 +394,13 @@ class CreateAPBDPengeluaranMassal extends Page
 
                                                     $set('detail_jumlah', $total);
                                                 }
-                                            )
-                                            ->required(),
+                                            ),
                                         TextInput::make('detail_jumlah')
                                             ->required()
                                             ->readOnly()
                                             ->prefix('Rp.')
                                             ->mask(RawJs::make('$money($input)'))
-                                            ->stripCharacters(',')
-                                            ->default(0),
+                                            ->stripCharacters(','),
                                     ])
                                     ->cloneable()
                                     ->afterStateUpdated(
@@ -428,8 +417,8 @@ class CreateAPBDPengeluaranMassal extends Page
                                             $set('jumlah', $total);
                                         }
                                     )
-                                ])
-                            ->live()
+                            ])
+                            ->live(onBlur:true)
                             ->visible(fn ($get) => $get('indikator_volume') and $get('indikator_volume') == 'Paket' ? true : false)
                             ->columnSpanFull(),
 
@@ -462,97 +451,34 @@ class CreateAPBDPengeluaranMassal extends Page
                                 ->default(0),
                         ])
                         ->columns(2)
-                    ]),
-
-                // Global Pengeluaran
-                // muncul di semua tipe
-                Select::make('sumber_id')
-                    ->label('Sumber Dana')
-                    ->required()
-                    ->searchable()
-                    ->options(ParameterSumberDana::query()->pluck('kode', 'id')),
-                
-                // Ini muncul jika tipenya keluar aja
-                Group::make([
-                    FusedGroup::make([
-                        DatePicker::make('tanggal_mulai')
-                            ->placeholder('Tanggal Mulai')
-                            ->live()
-                            ->default(Carbon::createFromFormat('d/m/Y',  '01/01/' . date('Y')))
-                            ->afterStateUpdated(
-                                function ($get, $state, $set) {
-                                    $m = $state;
-                                    $s = $get('tanggal_selesai');
-                                    if($m and $s){
-                                        $set('duration', dateDiffCarbon($m, $s, 'month'));
-                                    }
-                                }
-                            ),
-                        DatePicker::make('tanggal_selesai')
-                            ->placeholder('Tanggal Selesai')
-                            ->live()
-                            ->default(Carbon::createFromFormat('d/m/Y',  '01/01/' . date('Y'))->addMonths(11, 31))
-                            ->afterStateUpdated(
-                                function ($get, $state, $set) {
-                                    $m = $get('tanggal_mulai');
-                                    $s = $state;
-                                    if($m and $s){
-                                        $set('duration', dateDiffCarbon($m, $s, 'month'));
-                                    }
-                                }
-                            ),
+                        ->columnSpanFull(),
+                        Select::make('sumber_id')
+                            ->label('Sumber Dana')
+                            ->required()
+                            ->searchable()
+                            ->options(ParameterSumberDana::query()->pluck('kode', 'id')),
                     ])
-                    ->live()  
-                    ->columns(2)
-                    ->label('Durasi'),
-
-                    Select::make('pelaksana_id')
-                        ->label('Tim / Pelaksana')
-                        ->searchable()
-                        ->options(MasterJabatan::query()->pluck('nama', 'id')),
-
-                    TextEntry::make('duration')
-                        ->live()
-                        ->badge()
-                        ->icon(Heroicon::CalendarDateRange)
-                        ->default(
-                            function ($get) {
-                                $m = $get('tanggal_mulai');
-                                $s = $get('tanggal_selesai');
-
-                                if($m and $s){
-                                    return dateDiffCarbon($m, $s, 'month');
-                                }
-                            }
-                        ),
-                    
-                    TextInput::make('keluaran')
-                        ->placeholder('Output/Keluaran')
-                        ->columnSpanFull()
-                        ->nullable(),
-                ])
-                ->columns(3)
-                ->columnSpanFull()
             ]);
-    }
+        }
 
     public function create(): void
     {
         $data = $this->form->getState();
         $inputs = [];
+
+        // dd($data);
         
         try {
-            // dd($this->record);
             if(count($data['contents']) > 0) {
                 foreach($data['contents'] as $d){
                     $inputs = [
                         // corenya
                         'apbd_id' => $this->record->id,
-                        'sub_ssutama_id' => $data['sub_ssutama_id'],
-                        'tipe' => $data['tipe'],
-                        'utama_id' => $data['utama_id'],
-                        'sub_utama_id' => $data['sub_utama_id'],
-                        'sub_sutama_id' => $data['sub_sutama_id'],
+                        'sub_ssutama_id' => $d['sub_ssutama_id'],
+                        'tipe' => 'keluar',
+                        'utama_id' => $d['utama_id'],
+                        'sub_utama_id' => $d['sub_utama_id'],
+                        'sub_sutama_id' => $d['sub_sutama_id'],
                         'dibuat_oleh' => whois()->id,
 
                         // loopnya
@@ -561,21 +487,22 @@ class CreateAPBDPengeluaranMassal extends Page
                         'indikator_volume' => $d['indikator_volume'],
                         'satuan' => $d['satuan'],
                         'jumlah' => $d['jumlah'],
-                        'sumber_id' => $data['sumber_id'],
+                        'sumber_id' => $d['sumber_id'],
                         'tanggal_mulai' => $data['tanggal_mulai'],
                         'tanggal_selesai' => $data['tanggal_selesai'],
                         'pelaksana_id' => $data['pelaksana_id'],
                         'keluaran' => $data['keluaran'],
 
                         // kegiatan
-                        'kegiatan_id' => $d['kegiatan_id'],
-                        'sub_bidang_id' => $d['sub_bidang_id'],
-                        'bidang_id' => $d['bidang_id'],
+                        'kegiatan_id' => $data['kegiatan_id'],
+                        'sub_bidang_id' => $data['sub_bidang_id'],
+                        'bidang_id' => $data['bidang_id'],
                         'sub_kegiatan_id' => $d['sub_kegiatan_id'],
+                        'group_id' => $data['group_id'],
+                        'sub_kegiatan_nama' => $data['sub_kegiatan_nama'],
 
                     ];
 
-                    // dd($data);
                     $this->form->fill();
 
                     if (array_key_exists('detail_paket', $d)){
@@ -584,9 +511,9 @@ class CreateAPBDPengeluaranMassal extends Page
 
                     APBDKasFlow::create($inputs);
                 }
-
-                notif('Notifikasi Sistem', 'Pengeluaran Masal telah disimpan.', Heroicon::CheckBadge);
             }
+                
+            notif('Notifikasi Sistem', 'Pengeluaran Masal telah disimpan.', Heroicon::CheckBadge);
         } catch (Exception $e) {
             dd($e);
             notif();

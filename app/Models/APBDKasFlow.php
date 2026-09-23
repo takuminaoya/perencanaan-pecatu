@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\ParameterBidang;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -42,7 +43,33 @@ class APBDKasFlow extends Model
         return $this->hasMany(APBDPerubahanKasFlow::class, 'kas_flow_id');
     }
 
+    // Bidang
+    public function bidang() : BelongsTo {
+        return $this->belongsTo(ParameterBidang::class, 'bidang_id');
+    }
+
+    public function subBidang() : BelongsTo {
+        return $this->belongsTo(ParameterBidang::class, 'sub_bidang_id');
+    }
+
+    public function kegiatan() : BelongsTo {
+        return $this->belongsTo(ParameterBidang::class, 'kegiatan_id');
+    }
+
+    public function subKegiatan() : BelongsTo {
+        return $this->belongsTo(ParameterKegiatan::class, 'sub_kegiatan_id');
+    }
+
+    // group
+    public function group() : BelongsTo {
+        return $this->belongsTo(ParameterGroupBidang::class, 'group_id');
+    }
+
     public function getPerubahanBasedOnPerubahanID($perubahan_id) {
         return APBDPerubahanKasFlow::where('kas_flow_id', $this->id)->where('perubahan_id', $perubahan_id)->first();
+    }
+
+    public function dibuatOleh() : BelongsTo {
+        return $this->belongsTo(User::class, 'dibuat_oleh');
     }
 }

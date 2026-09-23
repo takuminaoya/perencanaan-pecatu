@@ -77,7 +77,12 @@ class ParameterKasResource extends Resource
             ])
             ->filters([
                 SelectFilter::make('tipe')
-                    ->options(TipeBidang::class)
+                    ->options([
+                        'main' => 'Bidang',
+                        'submain' => 'Sub Bidang',
+                        'sub' => 'Kegiatan',
+                        'child' => 'Sub Kegiatan'
+                    ])
             ])
             ->recordActions([
                 EditAction::make(),

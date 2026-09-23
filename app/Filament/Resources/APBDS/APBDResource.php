@@ -5,6 +5,7 @@ namespace App\Filament\Resources\APBDS;
 use App\Filament\Resources\APBDS\Pages\CreateAPBD;
 use App\Filament\Resources\APBDS\Pages\CreateAPBDPendapatanMassal;
 use App\Filament\Resources\APBDS\Pages\CreateAPBDPengeluaranMassal;
+use App\Filament\Resources\APBDS\Pages\CreateAPBDPengeluaranMassalPerBidang;
 use App\Filament\Resources\APBDS\Pages\EditAPBD;
 use App\Filament\Resources\APBDS\Pages\ListAPBDS;
 use App\Filament\Resources\APBDS\Pages\ViewAPBD;
@@ -65,6 +66,7 @@ class APBDResource extends Resource
             'create' => CreateAPBD::route('/create'),
             'create_pmassal' => CreateAPBDPendapatanMassal::route('/create/pendapatan/massal/{record}'),
             'create_bmassal' => CreateAPBDPengeluaranMassal::route('/create/belanja/massal/{record}'),
+            'create_bpbmassal' => CreateAPBDPengeluaranMassalPerBidang::route('/create/belanja/massal/bidang/{record}'),
             'view' => ViewAPBD::route('/{record}'),
             'edit' => EditAPBD::route('/{record}/edit'),
         ];

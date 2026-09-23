@@ -108,6 +108,7 @@ class APBDRangkumanBelanja extends Page
 
                     $subUtamaTotal = APBDKasFlow::where('apbd_id', $this->apbd_id)
                     ->where('tipe', 'keluar')
+                    ->where('kegiatan_id', $kegiatan->kegiatan_id)
                     ->where('sub_utama_id', $sub_utama->sub_utama_id)->sum('jumlah');
 
                     foreach($sub_sutamas as $sub_sutama){
@@ -126,6 +127,7 @@ class APBDRangkumanBelanja extends Page
 
                         $subSUtamaTotal = APBDKasFlow::where('apbd_id', $this->apbd_id)
                         ->where('tipe', 'keluar')
+                        ->where('kegiatan_id', $kegiatan->kegiatan_id)
                         ->where('sub_sutama_id', $sub_sutama->sub_sutama_id)->sum('jumlah');
 
                         foreach($sub_ssutamas as $sub_ssutama){
@@ -138,6 +140,7 @@ class APBDRangkumanBelanja extends Page
 
                             $total = $queru->where('apbd_id', $this->apbd_id)
                             ->where('tipe', 'keluar')
+                            ->where('kegiatan_id', $kegiatan->kegiatan_id)
                             ->where('sub_ssutama_id', $sub_ssutama->sub_ssutama_id)->sum('jumlah');
 
                             // penghitungan perubahan

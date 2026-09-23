@@ -13,6 +13,7 @@
             </select>
         </form>
         <button type="button" wire:click="setAPBD" class="selector-bar__action">Terapkan</button>
+        <a href="{{ route('print.apbd', ['id' => $apbd->id, 'mode' => 'pendapatan']) }}" target="_BLANK" class="selector-bar__action">Print</a>
     </div>
 
     @if ($apbd)
@@ -194,8 +195,8 @@
                                 <td colspan="2">Jumlah Belanja</td>
                                 <td class="num">{{ number_format($totalan) }}</td>
                                 @foreach ($apbd_perubahan as $ap)
-                                    <td class="num">{{ number_format($res['perubahan_totals'][$ap->id]) }}</td>
-                                    <td class="num">{{ number_format($totalan - $res['perubahan_totals'][$ap->id]) }}</td>
+                                    <td class="num">{{  isset($res) ? number_format($res['perubahan_totals'][$ap->id]) : 0 }}</td>
+                                    <td class="num">{{  isset($res) ? number_format($totalan - $res['perubahan_totals'][$ap->id]) : number_format($totalan) }}</td>
                                 @endforeach
                             </tr>
                         </tfoot>

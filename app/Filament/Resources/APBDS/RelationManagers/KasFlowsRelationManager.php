@@ -7,11 +7,13 @@ use App\Models\APBDPerubahan;
 use App\Models\APBDPerubahanKasFlow;
 use App\Models\MasterJabatan;
 use App\Models\ParameterBidang;
+use App\Models\ParameterGroupBidang;
 use App\Models\ParameterKas;
 use App\Models\ParameterKegiatan;
 use App\Models\ParameterStandarSatuanHarga;
 use App\Models\ParameterSumberDana;
 use BackedEnum;
+use DefStudio\SearchableInput\Forms\Components\SearchableInput;
 use Exception;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -87,7 +89,7 @@ class KasFlowsRelationManager extends RelationManager
                                 return $res;
                             }
                         )
-                        ->live()
+                        ->live(onBlur:true)
                         ->afterStateUpdated(
                             function ($state, $set) {
                                 $data = ParameterKas::find($state);
@@ -103,71 +105,15 @@ class KasFlowsRelationManager extends RelationManager
                             }
                         ),
                     Select::make('tipe')
-                        ->live()
+                        ->live(onBlur:true)
                         ->required()
                         ->default('masuk')
                         ->options(TipeKasFlow::class),
-                    Section::make('Detail Parameter Kas yang Dipilih')
-                        ->description('Informasi berdasarkan kparameter kas yang dipilih diatas')
-                        ->columnSpanFull()
-                        ->schema([
-                            Grid::make(2)
-                                ->schema([
-                                    TextEntry::make('pku')
-                                        ->live()
-                                        ->default(
-                                            function ($get) {
-                                                $kas_id = $get('sub_ssutama_id');
-                                                $res = getFamilyKas($kas_id);
-
-                                                return $res[4]['kode'] . ' ' . $res[4]['nama'];
-                                            }
-                                        )
-                                        ->label('Parameter Kas Utama'),
-                                    TextEntry::make('pksu')
-                                        ->live()
-                                        ->default(
-                                            function ($get) {
-                                                $kas_id = $get('sub_ssutama_id');
-                                                $res = getFamilyKas($kas_id);
-
-                                                return $res[3]['kode'] . ' ' . $res[3]['nama'];
-                                            }
-                                        )
-                                        ->label('Parameter Kas Sub Utama'),
-                                    TextEntry::make('pkssu')
-                                        ->live()
-                                        ->default(
-                                            function ($get) {
-                                                $kas_id = $get('sub_ssutama_id');
-                                                $res = getFamilyKas($kas_id);
-
-                                                return $res[2]['kode'] . ' ' . $res[2]['nama'];
-                                            }
-                                        )
-                                        ->label('Parameter Kas Sub S. Utama'),
-                                    TextEntry::make('pksssu')
-                                        ->live()
-                                        ->default(
-                                            function ($get) {
-                                                $kas_id = $get('sub_ssutama_id');
-                                                $res = getFamilyKas($kas_id);
-
-                                                return $res[1]['kode'] . ' ' . $res[1]['nama'];
-                                            }
-                                        )
-                                        ->label('Parameter Kas Sub S. S. Utama'),
-                                ])
-                        ])
-                        ->visible(fn ($get) => $get('sub_ssutama_id') ? true : false),
                     Hidden::make('utama_id')
-                        ->live()
                         ->nullable(),
                     Hidden::make('sub_utama_id')
-                        ->live()
                         ->nullable(),
                     Hidden::make('sub_sutama_id')
-                        ->live()
                         ->nullable(),
                 ])
                 ->columnSpanFull()
@@ -184,7 +130,6 @@ class KasFlowsRelationManager extends RelationManager
                         ->belowContent('Pilihan ini bersifat optional. namun ini harus diisi jika belanja/pengeluaran bukan berjenis pembiayaan')
                         ->searchable()
                         ->allowHtml()
-                        ->live()
                         ->options(
                             function () {
                                 $res = [];
@@ -207,18 +152,59 @@ class KasFlowsRelationManager extends RelationManager
                         )
                         ->afterStateUpdated(
                             function ($state, $set) {
-                                $data = getFamilyBidangBySubKegiatan($state);
+                                if($state){
+                                    $data = getFamilyBidangBySubKegiatan($state);
 
-                                $set('bidang_id', $data[1]['id']);
-                                $set('sub_bidang_id', $data[2]['id']);
-                                $set('kegiatan_id', $data[3]['id']);
+                                    $set('bidang_id', $data[1]['id']);
+                                    $set('sub_bidang_id', $data[2]['id']);
+                                    $set('kegiatan_id', $data[3]['id']);
+                                }
+                            }
+                        ),
+
+                    Select::make('group_id')
+                        ->options(
+                            function () : array {
+                                $res = [];
+
+                                $data = ParameterGroupBidang::all();
+
+                                foreach($data as $d) {
+                                    $res[$d->id] = $d->nama;
+                                }
+
+                                return $res;
+                            }
+                        )
+                        ->label('Nama Sub Kegiatan')
+                        ->required()
+                        ->createOptionForm([
+                            TextInput::make('nama')
+                                ->required()
+                        ])
+                        ->createOptionUsing(
+                            function ($data) {
+                                $check = ParameterGroupBidang::where('nama', 'like', '%'.$data['nama'].'%')->first();
+                                if(!$check){
+                                    $res = ParameterGroupBidang::create($data);
+                                    return $res->id;
+                                }
+                            }
+                        )
+                        ->afterStateUpdated(
+                            function ($state, $set) {
+                                $ck = ParameterGroupBidang::find($state);
+
+                                if($ck){
+                                    $set('group_id', $ck->id);
+                                    $set('sub_kegiatan_nama', $ck->nama);
+                                }
                             }
                         ),
 
                     Select::make('template_ssh')
                         ->label('Daftar Standar Satuan Harga')
                         ->belowContent('Kosongkan jika tidak menggunakan template, ini hanya digunakan untuk automisasi pengisian data dibawah.')
-                        ->columnSpanFull()
                         ->searchable()
                         ->allowHtml()
                         ->options(
@@ -233,102 +219,47 @@ class KasFlowsRelationManager extends RelationManager
 
                                     return $res;
                                 }
-                            )
-                            ->getSearchResultsUsing(
-                                function (string $search) : array {
-                                    $res = [];
+                        )
+                        ->getSearchResultsUsing(
+                            function (string $search) : array {
+                                $res = [];
 
-                                    $datas = ParameterStandarSatuanHarga::where('uraian_barang', 'like', "%{$search}%")->limit(100)->get();
+                                $datas = ParameterStandarSatuanHarga::where('uraian_barang', 'like', "%{$search}%")->limit(100)->get();
 
-                                    foreach ($datas as $data){
-                                        $res[$data->id] = '<span class="font-bold">'.$data->uraian_barang.'</span><div class="text-sm">'. $data->spesifikasi .'</div><div class="text-xs">Rp. '. number_format($data->harga_satuan) .' Per '. $data->satuan .'</div>'; 
-                                    }
-
-                                    return $res;
-                                })
-                            ->getOptionLabelUsing(fn ($value): ?string => ParameterStandarSatuanHarga::find($value)?->uraian_barang)
-                            ->live()
-                            ->afterStateUpdated(
-                                function ($state, $set) {
-                                    $d = ParameterStandarSatuanHarga::find($state);
-
-                                    if($d){
-                                        // dd($d);
-                                        
-                                        $set('judul', $d->spesifikasi);
-                                        $set('volume', 1);
-                                        $set('indikator_volume', $d->satuan);
-                                        $set('satuan', $d->harga_satuan);
-                                        $set('jumlah', $d->harga_satuan);
-                                    }
+                                foreach ($datas as $data){
+                                    $res[$data->id] = '<span class="font-bold">'.$data->uraian_barang.'</span><div class="text-sm">'. $data->spesifikasi .'</div><div class="text-xs">Rp. '. number_format($data->harga_satuan) .' Per '. $data->satuan .'</div>'; 
                                 }
-                            ),
-                    
+
+                                return $res;
+                            })
+                        ->getOptionLabelUsing(fn ($value): ?string => ParameterStandarSatuanHarga::find($value)?->uraian_barang)
+                        ->live(onBlur:true)
+                        ->afterStateUpdated(
+                            function ($state, $set) {
+                                $d = ParameterStandarSatuanHarga::find($state);
+
+                                if($d){
+                                    // dd($d);
+                                    
+                                    $set('judul', $d->spesifikasi);
+                                    $set('volume', 1);
+                                    $set('indikator_volume', $d->satuan);
+                                    $set('satuan', $d->harga_satuan);
+                                    $set('jumlah', $d->harga_satuan);
+                                }
+                            }
+                        ),
+
+                    Hidden::make('group_id'),
+                    TextInput::make('sub_kegiatan_nama'),
                     Hidden::make('bidang_id')
-                        ->live()
                         ->default(fn($get) => $get('sub_kegiatan_id') ? getFamilyBidangBySubKegiatan($get('sub_kegiatan_id'))[1]['id'] : ''),
                     Hidden::make('sub_bidang_id')
-                        ->live()
                         ->default(fn($get) => $get('sub_kegiatan_id') ? getFamilyBidangBySubKegiatan($get('sub_kegiatan_id'))[2]['id'] : ''),
                     Hidden::make('kegiatan_id')
-                        ->live()
                         ->default(fn($get) => $get('sub_kegiatan_id') ? getFamilyBidangBySubKegiatan($get('sub_kegiatan_id'))[3]['id'] : ''),
-
-                    Section::make('Detail Parameter Kegiatan yang Dipilih')
-                        ->description('Informasi berdasarkan parameter kegiatan yang dipilih diatas')
-                        ->columnSpanFull()
-                        ->schema([
-                            Grid::make(2)
-                                ->schema([
-                                    TextEntry::make('bidang')
-                                        ->live()
-                                        ->default(
-                                            function ($get) {
-                                                $sub_kegiatan_id = $get('sub_kegiatan_id');
-                                                $sk = getFamilyBidangBySubKegiatan($sub_kegiatan_id);
-
-                                                return $sk[1]['kode'] . '  ' . $sk[1]['nama'];
-                                            }
-                                        )
-                                        ->label('Bidang'),
-                                    TextEntry::make('sub_bidang')
-                                        ->live()
-                                        ->default(
-                                            function ($get) {
-                                                $sub_kegiatan_id = $get('sub_kegiatan_id');
-                                                $sk = getFamilyBidangBySubKegiatan($sub_kegiatan_id);
-
-                                                return $sk[2]['kode'] . '  ' . $sk[2]['nama'];
-                                            }
-                                        )
-                                        ->label('Sub Bidang'),
-                                    TextEntry::make('kegiatan')
-                                        ->live()
-                                        ->default(
-                                            function ($get) {
-                                                $sub_kegiatan_id = $get('sub_kegiatan_id');
-                                                $sk = getFamilyBidangBySubKegiatan($sub_kegiatan_id);
-
-                                                return $sk[3]['kode'] . '  ' . $sk[3]['nama'];
-                                            }
-                                        )
-                                        ->label('Kegiatan'),
-                                    TextEntry::make('sub_kegiatan')
-                                        ->live()
-                                        ->default(
-                                            function ($get) {
-                                                $sub_kegiatan_id = $get('sub_kegiatan_id');
-                                                $sk = getFamilyBidangBySubKegiatan($sub_kegiatan_id);
-
-                                                return $sk[4]['kode'] . '  ' . $sk[4]['nama'];
-                                            }
-                                        )
-                                        ->label('Sub Kegiatan'),
-                                ])
-                        ])
-                        ->visible(fn ($get) => $get('sub_kegiatan_id') ? true : false),
                 ])
-                ->live()
+                ->live(onBlur:true)
                 ->visible(
                     function ($get) {
                         if ($get('tipe') && $get('tipe')->value === 'keluar'){
@@ -353,7 +284,7 @@ class KasFlowsRelationManager extends RelationManager
                             ->placeholder('Jumlah barang/jasa')
                             ->numeric()
                             ->default(1)
-                            ->live()
+                            ->live(onBlur:true)
                             ->afterStateUpdated(
                                 function($state, $set, $get) {
                                     $volume = $state;
@@ -366,7 +297,7 @@ class KasFlowsRelationManager extends RelationManager
                             ->required(),
                         Select::make('indikator_volume')
                             ->searchable()
-                            ->live()
+                            ->live(onBlur:true)
                             ->options(
                                 function () : array {
                                     $res = [];
@@ -412,7 +343,7 @@ class KasFlowsRelationManager extends RelationManager
                                             function () {
                                                 $res = [];
 
-                                                $datas = ParameterStandarSatuanHarga::limit(100)->get();
+                                                $datas = ParameterStandarSatuanHarga::limit(10)->get();
 
                                                 foreach ($datas as $data){
                                                     $res[$data->id] = '<span class="font-bold">'.$data->uraian_barang.'</span><div class="text-sm">'. $data->spesifikasi .'</div><div class="text-xs">Rp. '. number_format($data->harga_satuan) .' Per '. $data->satuan .'</div>'; 
@@ -434,7 +365,7 @@ class KasFlowsRelationManager extends RelationManager
                                             return $res;
                                         })
                                     ->getOptionLabelUsing(fn ($value): ?string => ParameterStandarSatuanHarga::find($value)?->uraian_barang)
-                                    ->live()
+                                    ->live(onBlur:true)
                                     ->afterStateUpdated(
                                         function ($state, $set) {
                                             $d = ParameterStandarSatuanHarga::find($state);
@@ -457,7 +388,6 @@ class KasFlowsRelationManager extends RelationManager
                                         ->placeholder('Jumlah barang/jasa')
                                         ->numeric()
                                         ->default(1)
-                                        ->live()
                                         ->afterStateUpdated(
                                             function($state, $set, $get) {
                                                 $volume = $state;
@@ -497,7 +427,6 @@ class KasFlowsRelationManager extends RelationManager
                                     ->mask(RawJs::make('$money($input)'))
                                     ->stripCharacters(',')
                                     ->default(0)
-                                    ->live()
                                     ->afterStateUpdated(
                                         function($state, $set, $get) {
                                             $volume = $get('detail_volume');
@@ -532,7 +461,7 @@ class KasFlowsRelationManager extends RelationManager
                                 }
                             )
                         ])
-                    ->live()
+                    ->live(onBlur:true)
                     ->visible(fn ($get) => $get('indikator_volume') and $get('indikator_volume') == 'Paket' ? true : false)
                     ->columnSpanFull(),
 
@@ -542,7 +471,7 @@ class KasFlowsRelationManager extends RelationManager
                         ->mask(RawJs::make('$money($input)'))
                         ->stripCharacters(',')
                         ->default(0)
-                        ->live()
+                        ->live(onBlur:true)
                         ->afterStateUpdated(
                             function($state, $set, $get) {
                                 $volume = $get('volume');
@@ -561,7 +490,7 @@ class KasFlowsRelationManager extends RelationManager
                         ->prefix('Rp.')
                         ->mask(RawJs::make('$money($input)'))
                         ->stripCharacters(',')
-                        ->live()
+                        ->live(onBlur:true)
                         ->default(0),
 
                     // Ini muncul jika tipenya keluar aja
@@ -569,7 +498,7 @@ class KasFlowsRelationManager extends RelationManager
                         FusedGroup::make([
                             DatePicker::make('tanggal_mulai')
                                 ->placeholder('Tanggal Mulai')
-                                ->live()
+                                ->live(onBlur:true)
                                 ->default(Carbon::createFromFormat('d/m/Y',  '01/01/' . date('Y')))
                                 ->afterStateUpdated(
                                     function ($get, $state, $set) {
@@ -582,7 +511,7 @@ class KasFlowsRelationManager extends RelationManager
                                 ),
                             DatePicker::make('tanggal_selesai')
                                 ->placeholder('Tanggal Selesai')
-                                ->live()
+                                ->live(onBlur:true)
                                 ->default(Carbon::createFromFormat('d/m/Y',  '01/01/' . date('Y'))->addMonths(11, 31))
                                 ->afterStateUpdated(
                                     function ($get, $state, $set) {
@@ -594,7 +523,7 @@ class KasFlowsRelationManager extends RelationManager
                                     }
                                 ),
                         ])
-                        ->live()  
+                        ->live(onBlur:true)  
                         ->columns(2)
                         ->label('Durasi'),
 
@@ -604,7 +533,7 @@ class KasFlowsRelationManager extends RelationManager
                             ->options(MasterJabatan::query()->pluck('nama', 'id')),
 
                         TextEntry::make('duration')
-                            ->live()
+                            ->live(onBlur:true)
                             ->badge()
                             ->icon(Heroicon::CalendarDateRange)
                             ->default(
@@ -691,7 +620,7 @@ class KasFlowsRelationManager extends RelationManager
                     ->allowHtml()
                     ->searchable()
                     ->required()
-                    ->live()
+                    ->live(onBlur:true)
                     ->createOptionForm([
                         TextInput::make('judul')
                             ->columnSpanFull()
@@ -781,7 +710,7 @@ class KasFlowsRelationManager extends RelationManager
                             ->placeholder('Jumlah barang/jasa')
                             ->numeric()
                             ->default(1)
-                            ->live()
+                            ->live(onBlur:true)
                             ->afterStateUpdated(
                                 function($state, $set, $get) {
                                     $volume = $state;
@@ -794,7 +723,7 @@ class KasFlowsRelationManager extends RelationManager
                             ->required(),
                         Select::make('indikator_volume')
                             ->searchable()
-                            ->live()
+                            ->live(onBlur:true)
                             ->options(
                                 function () : array {
                                     $res = [];
@@ -864,7 +793,7 @@ class KasFlowsRelationManager extends RelationManager
                                             return $res;
                                         })
                                     ->getOptionLabelUsing(fn ($value): ?string => ParameterStandarSatuanHarga::find($value)?->uraian_barang)
-                                    ->live()
+                                    ->live(onBlur:true)
                                     ->afterStateUpdated(
                                         function ($state, $set) {
                                             $d = ParameterStandarSatuanHarga::find($state);
@@ -888,7 +817,7 @@ class KasFlowsRelationManager extends RelationManager
                                         ->placeholder('Jumlah barang/jasa')
                                         ->numeric()
                                         ->default(1)
-                                        ->live()
+                                        ->live(onBlur:true)
                                         ->afterStateUpdated(
                                             function($state, $set, $get) {
                                                 $volume = $state;
@@ -928,7 +857,7 @@ class KasFlowsRelationManager extends RelationManager
                                     ->mask(RawJs::make('$money($input)'))
                                     ->stripCharacters(',')
                                     ->default(0)
-                                    ->live()
+                                    ->live(onBlur:true)
                                     ->afterStateUpdated(
                                         function($state, $set, $get) {
                                             $volume = $get('detail_volume');
@@ -962,7 +891,7 @@ class KasFlowsRelationManager extends RelationManager
                                 }
                             )
                     ])
-                    ->live()
+                    ->live(onBlur:true)
                     ->visible(fn ($get) => $get('indikator_volume') and $get('indikator_volume') == 'Paket' ? true : false)
                     ->columnSpanFull(),
 
@@ -972,7 +901,7 @@ class KasFlowsRelationManager extends RelationManager
                         ->mask(RawJs::make('$money($input)'))
                         ->stripCharacters(',')
                         ->default(0)
-                        ->live()
+                        ->live(onBlur:true)
                         ->required()
                         ->afterStateUpdated(
                             function($state, $set, $get, $record) {
@@ -991,7 +920,7 @@ class KasFlowsRelationManager extends RelationManager
                         ->prefix('Rp.')
                         ->mask(RawJs::make('$money($input)'))
                         ->stripCharacters(',')
-                        ->live()
+                        ->live(onBlur:true)
                         ->default(
                             function($record) {
                                 return $record->jumlah;
@@ -1051,20 +980,49 @@ class KasFlowsRelationManager extends RelationManager
                     ->label('Kas Sub S.S. Utama')
                     ->toggleable(isToggledHiddenByDefault: false)
                     ->sortable(),
+                TextColumn::make('bidang.nama')
+                    ->label('Bidang')
+                    ->wrap()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('subBidang.nama')
+                    ->label('Sub Bidang')
+                    ->sortable()
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('kegiatan.nama')
+                    ->label('Kegiatan')
+                    ->sortable()
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('subKegiatan.nama')
+                    ->label('Sub Kegiatan')
+                    ->sortable()
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('group.nama')
+                    ->label('Group')
+                    ->sortable()
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('judul')
                     ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: false)
                     ->searchable(),
                 ColumnGroup::make('Anggaran', [
                     TextColumn::make('volumes')
                         ->label('Volume')
+                        ->toggleable(isToggledHiddenByDefault: false)
                         ->default(fn ($record) => $record->volume . ' ' .$record->indikator_volume),
                     TextColumn::make('satuan')
+                        ->toggleable(isToggledHiddenByDefault: false)
                         ->summarize([
                             Sum::make()
                                 ->money('idr')
                         ])
                         ->money('idr'),
                     TextColumn::make('jumlah')
+                        ->toggleable(isToggledHiddenByDefault: false)
                         ->summarize([
                             Sum::make()
                                 ->money('idr')
@@ -1076,6 +1034,7 @@ class KasFlowsRelationManager extends RelationManager
                 TextColumn::make('sumberDana.kode')
                     ->label('Sumber')
                     ->badge()
+                    ->toggleable(isToggledHiddenByDefault: false)
                     ->sortable(),
                 TextColumn::make('perubahans.perubahan.judul')
                     ->bulleted()
@@ -1147,6 +1106,7 @@ class KasFlowsRelationManager extends RelationManager
                                     
                             ])
                     )
+                    ->toggleable(isToggledHiddenByDefault: false)
                     ->searchable(),
                 TextColumn::make('tipe_kas')
                     ->label('Tipe Kas Flow')
@@ -1154,7 +1114,12 @@ class KasFlowsRelationManager extends RelationManager
                     ->default(fn ($record) => tipeKasFlow($record->tipe))
                     ->color(fn ($record) => tipeKasFlow($record->tipe)->getColor())
                     ->icon(fn ($record) => tipeKasFlow($record->tipe)->getIcon())
+                    ->toggleable(isToggledHiddenByDefault: false)
                     ->searchable(),
+                TextColumn::make('dibuatOleh.name')
+                    ->label('Dibuat Oleh')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('created_at')
                     ->label('Dibuat Pada')
                     ->dateTime()

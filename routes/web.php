@@ -3,5 +3,4 @@
 use App\Http\Controllers\PrintController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/print/rkk/{id}', [PrintController::class, 'printRKK'])->name('print.rkk');
-Route::get('/download/rkk/{id}', [PrintController::class, 'downloadRKK'])->name('download.rkk');
+Route::get('/print/apbg/{id}/{mode}', [PrintController::class, 'printAPBD'])->name('print.apbd');
